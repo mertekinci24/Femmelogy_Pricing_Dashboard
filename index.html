@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Femmelogy – Fiyatlandırma Envanteri</title>
+  <meta name="description" content="Femmelogy profesyonel fiyatlandırma paneli. Amazon ve Trendyol için esnek parametreli fiyat simülasyonu." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0d0f14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Femmelogy">
+</head>
+<body>
+
+  <!-- ════════════ KENAR ÇUBUĞU ════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">F</div>
+      <div class="brand-text">
+        <span class="brand-name">Femmelogy</span>
+        <span class="brand-sub">Fiyat Paneli</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <p class="nav-label">Platformlar</p>
+      <button class="nav-tab active" data-tab="amazon">
+        <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>
+        <span class="tab-text">Amazon</span>
+        <span class="tab-badge" id="badge-amazon">0</span>
+      </button>
+      <button class="nav-tab" data-tab="trendyol">
+        <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span>
+        <span class="tab-text">Trendyol</span>
+        <span class="tab-badge" id="badge-trendyol">0</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="footer-status"><span class="status-dot"></span><span>Canlı Simülasyon</span></div>
+    </div>
+  </aside>
+
+  <!-- ════════════ ANA İÇERİK ════════════ -->
+  <main class="main-content">
+
+    <!-- ÜST BAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 class="page-title" id="page-title">Amazon Envanteri</h1>
+        <p class="page-subtitle" id="page-subtitle">%10,8 / %16,8 komisyon · Ölü Bölge koruması · X,90 yuvarlama · Brüt fiyat bazlı hesaplama</p>
+      </div>
+      <div class="topbar-right">
+        <button class="btn-clear-all" id="btn-clear-all">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Tümünü Sil
+        </button>
+        <div class="currency-badge">Türk Lirası (₺)</div>
+      </div>
+    </header>
+
+    <!-- ═══════ AMAZON PANELİ ═══════ -->
+    <section class="tab-panel active" id="panel-amazon">
+
+      <!-- 1. KÜRESEL PARAMETRELER -->
+      <div class="global-params-card">
+        <div class="gp-header">
+          <div class="gp-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+            Küresel Parametreler
+          </div>
+          <span class="gp-hint">Değişiklikler tüm envantere anında uygulanır</span>
+        </div>
+        <div class="gp-fields">
+          <div class="gp-field">
+            <label for="gp-shipping">Amazon Kargo Maliyeti (₺)</label>
+            <div class="iw"><span class="ip">₺</span><input type="number" id="gp-shipping" min="0" step="0.01" value="93.05" /></div>
+          </div>
+          <div class="gp-field">
+            <label for="gp-margin">Varsayılan Hedef Marj (%)</label>
+            <div class="iw"><span class="ip">%</span><input type="number" id="gp-margin" min="0" max="99" step="0.1" value="25" /></div>
+          </div>
+          <div class="gp-field gp-info-field">
+            <label>Komisyon Kademeleri</label>
+            <div class="tier-badges">
+              <span class="tier-low">%10,8 ≤ ₺499,99</span>
+              <span class="tier-high">%16,8 ≥ ₺500,00</span>
+            </div>
+          </div>
+          <div class="gp-field gp-info-field">
+            <label>Ölü Bölge Kuralı</label>
+            <div class="tier-badges">
+              <span class="tier-dead">₺500 – ₺536 → ₺499,90</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. EYLEM BUTONLARI -->
+      <div class="action-bar" style="justify-content: space-between;">
+        <div class="action-group" style="display: flex; gap: 8px;">
+          <button class="btn-action-primary" id="btn-add-amazon" onclick="modalAc(null)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Yeni Ürün Ekle
+          </button>
+        </div>
+
+        <div class="action-group" style="display: flex; gap: 8px; align-items: center;">
+          <input type="file" id="smart-import-amazon" accept=".csv, .xlsx, .xls" class="hidden" onchange="routeAmazonImport(event)" />
+          <button class="btn-action-import" onclick="document.getElementById('smart-import-amazon').click()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Akıllı İçe Aktar
+          </button>
+          
+          <div style="width: 1px; height: 16px; background: var(--border); margin: 0 4px;"></div>
+          
+          <button class="btn-action-import" id="btn-export-amazon" onclick="exportAmazonExcel()" title="Sistemi Excel'e Yedekle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Dışa Aktar
+          </button>
+        </div>
+
+        <div class="action-bar-right">
+          <span class="import-feedback hidden" id="amazon-import-feedback"></span>
+        </div>
+      </div>
+
+      <!-- 3. GÖRÜNTÜLEME TABLOSU -->
+      <div class="table-wrapper">
+        <table class="inventory-table" id="amazon-table">
+          <thead>
+            <tr>
+              <th style="width:36px">#</th>
+              <th>Ürün Adı</th>
+              <th style="text-align: center; width: 50px;">BB</th>
+              <th>Toplam Maliyet</th>
+              <th class="col-price">Mevcut Fiyat (₺)</th>
+              <th>Mevcut Marj (%)</th>
+              <th class="col-price">Önerilen Fiyat (₺)</th>
+              <th>Hedef Marj (%)</th>
+              <th>Durum (Ölü Bölge vb)</th>
+              <th style="width:80px">İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="amazon-tbody"></tbody>
+        </table>
+        <div class="table-empty" id="amazon-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="36" height="36" opacity="0.25"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+          <p>Henüz ürün yok. <strong>Yeni Ürün Ekle</strong> butonuna tıklayın veya CSV içe aktarın.</p>
+        </div>
+      </div>
+    </section>
+
+        <!-- ═══════ TRENDYOL PANELİ ═══════ -->
+    <section class="tab-panel" id="panel-trendyol">
+
+      <!-- 1. KÜRESEL PARAMETRELER -->
+      <div class="global-params-card">
+        <div class="gp-header">
+          <div class="gp-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+            Trendyol Küresel Parametreler
+          </div>
+          <span class="gp-hint">Değişiklikler tüm envantere anında uygulanır</span>
+        </div>
+        <div class="gp-fields">
+          <div class="gp-field">
+            <label for="gp-ty-commission">Varsayılan Komisyon (%)</label>
+            <div class="iw"><span class="ip">%</span><input type="number" id="gp-ty-commission" min="0" max="50" step="0.1" value="19" /></div>
+          </div>
+          <div class="gp-field">
+            <label for="gp-ty-shipping">Varsayılan Kargo (₺) <span style="font-size:9px;color:var(--text-muted)">(350+ ₺ baremi)</span></label>
+            <div class="iw"><span class="ip">₺</span><input type="number" id="gp-ty-shipping" min="0" step="0.01" value="93.05" /></div>
+          </div>
+          <div class="gp-field">
+            <label for="gp-ty-margin">Varsayılan Hedef Marj (%)</label>
+            <div class="iw"><span class="ip">%</span><input type="number" id="gp-ty-margin" min="0" max="99" step="0.1" value="25" /></div>
+          </div>
+          <div class="gp-field gp-info-field">
+            <label>Kademeli Kargo Ücretleri</label>
+            <div class="tier-badges">
+              <span class="tier-low">₺41 (≤₺199)</span>
+              <span class="tier-high">₺79 (≤₺349)</span>
+              <span class="tier-dead">Varsayılan (≥₺350)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. EYLEM BUTONLARI -->
+      <div class="action-bar">
+        <button class="btn-action-primary trendyol-btn-add" id="btn-add-trendyol" onclick="modalTyAc(null)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Yeni Ürün Ekle
+        </button>
+        <input type="file" id="smart-import-trendyol" accept=".xlsx, .xls" class="hidden" onchange="routeTrendyolImport(event)" />
+        <button class="btn-action-import" onclick="document.getElementById('smart-import-trendyol').click()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Akıllı İçe Aktar
+        </button>
+        <button class="btn-action-import" id="btn-export-trendyol" onclick="exportTrendyolExcel()" style="margin-left: 8px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Dışa Aktar
+        </button>
+        <div class="action-bar-right">
+          <span class="import-feedback hidden" id="trendyol-import-feedback"></span>
+        </div>
+      </div>
+
+      <!-- 3. TABLO -->
+      <div class="table-wrapper">
+        <table class="inventory-table" id="trendyol-table">
+          <thead>
+            <tr>
+              <th style="width:36px">#</th>
+              <th>Ürün Adı</th>
+              <th style="text-align: center; width: 80px;">GRUP</th>
+              <th style="text-align: center; width: 50px;">BB</th>
+              <th>Toplam Maliyet</th>
+              <th class="col-price">Mevcut Fiyat (₺)</th>
+              <th>Mevcut Marj (%)</th>
+              <th class="col-price">Önerilen Fiyat (₺)</th>
+              <th>Hedef Marj (%)</th>
+              <th style="width:80px">İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="trendyol-tbody"></tbody>
+        </table>
+        <div class="table-empty" id="trendyol-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="36" height="36" opacity="0.25"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+          <p>Henüz ürün yok. <strong>Yeni Ürün Ekle</strong> butonuna tıklayın veya Excel içe aktarın.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ════════════ DÜZENLEME MODALI ════════════ -->
+  <div class="modal-backdrop hidden" id="modal-backdrop" onclick="modalKapat()"></div>
+  <div class="modal-drawer hidden" id="modal-drawer">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Ürün Düzenle</div>
+      <button class="modal-close" onclick="modalKapat()" title="Kapat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="modal-product-id" />
+      <div class="modal-field">
+        <label for="modal-amz-category">Kategori Seçimi</label>
+        <select id="modal-amz-category">
+          <option value="kozmetik">Kozmetik</option>
+          <option value="saglik">Sağlık</option>
+          <option value="diger">Diğer Kategoriler</option>
+        </select>
+        
+        <div style="margin-top: 10px; padding: 12px; background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: 6px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 2px;">KOMİSYON ORANLARI</div>
+          
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary);">
+            <span style="display: block; width: 8px; height: 8px; background: var(--accent-purple); border-radius: 50%;"></span>
+            <span style="flex-grow: 1;"><strong>Kozmetik:</strong> %10.8 (≤₺500) / %16.8 (≥₺500)</span>
+          </div>
+          
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary);">
+            <span style="display: block; width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%;"></span>
+            <span style="flex-grow: 1;"><strong>Sağlık:</strong> %16.2 Sabit (Flat)</span>
+          </div>
+          
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary);">
+            <span style="display: block; width: 8px; height: 8px; background: var(--accent-blue); border-radius: 50%;"></span>
+            <span style="flex-grow: 1;"><strong>Diğer:</strong> %10.8 Sabit (Flat)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-field">
+        <label for="modal-name">Ürün Adı</label>
+        <input type="text" id="modal-name" placeholder="örn. İpek Saç Tokası Seti" />
+      </div>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label for="modal-sku">SKU <span class="field-hint">isteğe bağlı</span></label>
+          <input type="text" id="modal-sku" placeholder="örn. CE-LSPX-CVQ5" />
+        </div>
+        <div class="modal-field">
+          <label for="modal-asin">ASIN <span class="field-hint">isteğe bağlı</span></label>
+          <input type="text" id="modal-asin" placeholder="örn. B0H3HXJPQ1" />
+        </div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label for="modal-cost">Ürün Maliyeti (₺)</label>
+          <div class="iw"><span class="ip">₺</span><input type="number" id="modal-cost" placeholder="0,00" min="0" step="0.01" /></div>
+        </div>
+        <div class="modal-field">
+          <label for="modal-pkg">Ambalaj Maliyeti (₺)</label>
+          <div class="iw"><span class="ip">₺</span><input type="number" id="modal-pkg" placeholder="0,00" min="0" step="0.01" /></div>
+        </div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label for="modal-fixed">Sabit Maliyet/Birim (₺)
+            <span class="field-hint">etiket, depo vb.</span>
+          </label>
+          <div class="iw"><span class="ip">₺</span><input type="number" id="modal-fixed" placeholder="0,00" min="0" step="0.01" /></div>
+        </div>
+        <div class="modal-field">
+          <label for="modal-margin">Hedef Marj (%)
+            <span class="field-hint">boş = küresel marj</span>
+          </label>
+          <div class="iw"><span class="ip">%</span><input type="number" id="modal-margin" placeholder="" min="0" max="99" step="0.1" /></div>
+        </div>
+      </div>
+
+      <!-- Canlı Önizleme -->
+      <div id="amazon-ledger-preview" style="background: var(--bg-darker); padding: 12px; border-radius: 8px;">
+        <div style="display:flex; justify-content:space-between; font-weight:700; font-size:16px; margin-bottom:12px;">
+          <span>Önerilen Satış Fiyatı</span>
+          <span id="amazon-onerilen-fiyat" style="color:var(--text-primary);">—</span>
+        </div>
+        <div style="font-size:13px; color:var(--text-secondary); border-bottom:1px solid var(--border-color); padding-bottom:8px; margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Ürün Maliyeti (COGS)</span><span id="amazon-cogs-goster">—</span></div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Amazon Komisyonu</span><span id="amazon-komisyon-goster">—</span></div>
+          <div style="display:flex; justify-content:space-between;"><span>Kargo Maliyeti</span><span id="amazon-kargo-goster">—</span></div>
+        </div>
+        <div style="font-size:14px; font-weight:700;">
+          <div class="preview-row highlight-row" style="border-top-style: dashed; border-top-color: var(--border-strong);">
+  <span>Başa Baş Fiyatı (0 Kâr)</span>
+  <span id="amazon-be-fiyat" style="color: #fbbf24; font-weight: 700;">—</span>
+</div>
+<div class="preview-row">
+  <span>Maksimum İndirim Marjı</span>
+  <span id="amazon-max-discount" style="color: #fbbf24; font-weight: 700;">—</span>
+</div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Net Kâr</span><span id="amazon-netkarpro">—</span></div>
+          <div style="display:flex; justify-content:space-between;"><span>Net Marj</span><span id="amazon-marj-badge">—</span></div>
+        </div>
+        <div id="amazon-deadzone-uyari" class="hidden" style="margin-top:12px; background:rgba(239, 68, 68, 0.15); color:var(--accent-red); padding:8px; border-radius:6px; font-size:12px;">
+          ⚠️ <b>Ölü Bölge (Dead Zone) Aktif:</b> Artan komisyon dilimi sebebiyle fiyat 499.90 TL'ye sabitlendi.
+        </div>
+        <div id="amazon-buybox-panel" class="hidden" style="margin-top:12px; border-top:1px solid var(--border-color); padding-top:8px; font-size:12px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-weight:600;"><span>Buybox Fiyatı</span><span id="amazon-buybox-fiyat">—</span></div>
+          <div style="display:flex; justify-content:space-between;"><span>Rekabet Durumu</span><span id="amazon-buybox-durum">—</span></div>
+        </div>
+      </div>
+      <div class="modal-preview hidden" id="prev-amz-curr-block" style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 15px;">
+        <div style="font-weight: 600; font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Amazon Mevcut Satış Performansı</div>
+        <div class="preview-row"><span>Mevcut Fiyat</span><span id="prev-amz-curr-price" style="font-weight:600">—</span></div>
+        <div class="preview-row"><span>Mevcut Net Kâr</span><span id="prev-amz-curr-net" style="font-weight:600">—</span></div>
+        <div class="preview-row"><span>Mevcut Marj</span><span id="prev-amz-curr-margin" style="font-weight:700">—</span></div>
+      </div>
+      <div class="modal-error hidden" id="modal-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" onclick="modalKapat()">İptal</button>
+      <button class="btn-modal-save" id="btn-modal-save" onclick="modalKaydet()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
+        Kaydet
+      </button>
+    </div>
+  </div>
+
+    <!-- ════════════ DÜZENLEME MODALI TRENDYOL ════════════ -->
+  <div class="modal-backdrop hidden" id="modal-backdrop-ty" onclick="modalTyKapat()"></div>
+  <div class="modal-drawer hidden" id="modal-drawer-ty">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title-ty">Ürün Düzenle (Trendyol)</div>
+      <button class="modal-close" onclick="modalTyKapat()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="modal-ty-id" />
+      <div class="modal-field">
+        <label for="modal-ty-name">Ürün Adı</label>
+        <input type="text" id="modal-ty-name" />
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label>SKU</label><input type="text" id="modal-ty-sku" /></div>
+        <div class="modal-field"><label>ASIN/Barkod</label><input type="text" id="modal-ty-asin" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label>Ürün Maliyeti (₺)</label><div class="iw"><span class="ip">₺</span><input type="number" id="modal-ty-cost" step="0.01"/></div></div>
+        <div class="modal-field"><label>Ambalaj (₺)</label><div class="iw"><span class="ip">₺</span><input type="number" id="modal-ty-pkg" step="0.01"/></div></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label>Sabit Maliyet (₺)</label><div class="iw"><span class="ip">₺</span><input type="number" id="modal-ty-fixed" step="0.01"/></div></div>
+        <div class="modal-field"><label>Hedef Marj (%) <span class="field-hint">boş=küresel</span></label><div class="iw"><span class="ip">%</span><input type="number" id="modal-ty-margin" step="0.1"/></div></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label>Özel Komisyon (%)</label><div class="iw"><span class="ip">%</span><input type="number" id="modal-ty-customcomm" step="0.1"/></div></div>
+        <div class="modal-field"><label>Komisyon Bitiş Tarihi</label><input type="date" id="modal-ty-commdate" style="width:100%;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);outline:none;font-family:inherit;font-size:14px;" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label>Satış KDV (%)</label><div class="iw"><span class="ip">%</span><input type="number" id="modal-ty-vatsell" step="1" value="20"/></div></div>
+      </div>
+      <div class="modal-field" style="flex-direction:row; align-items:center;">
+        <input type="checkbox" id="modal-ty-today" style="width:16px;height:16px;margin-right:8px;" />
+        <label for="modal-ty-today" style="cursor:pointer;">Bugün Kargoda (Hizmet Bedeli ₺5.99, aksi ₺13.19)</label>
+      </div>
+
+      <div style="margin-top: 16px; padding: 12px; background: rgba(167, 139, 250, 0.08); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 6px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="modal-ty-traffic" style="width: 16px; height: 16px; accent-color: var(--accent-purple);">
+              <span style="font-weight: 600; color: var(--accent-purple); font-size: 13px;">🚀 Trafik Ürünü (Grup B) Stratejisi Uygula</span>
+          </label>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; margin-left: 24px;">Sabit giderleri ve iade payını siler, hedef marjı %2'ye sabitler. Yalnızca 75 ₺ altı çıkabilecek ucuz ürünlerde çalışır.</div>
+      </div>
+
+      <div class="modal-preview" id="modal-ty-preview">
+        <div id="prev-ty-title" data-testid="modal-baslik" style="font-size: 13px; font-weight: 700; color: var(--accent-purple); margin-bottom: 8px; text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Birim Kâr Önizlemesi</div>
+        <div class="preview-row highlight-row"><span>Önerilen Satış Fiyatı</span><span id="prev-ty-price" class="prev-price-val">—</span></div>
+        <div id="prev-ty-set-row" data-testid="set-row" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border-color); display: none;">
+            <span style="color: var(--text-secondary);">Set Fiyatı (<span id="prev-ty-set-count"></span> Adet)</span>
+            <span id="prev-ty-set-price" data-testid="set-baslik" style="font-weight: 700; color: var(--text-primary);"></span>
+         </div>
+        <div class="preview-row"><span>Kargo + Hizmet</span><span id="prev-ty-cargo">—</span></div>
+        <div class="preview-row"><span>Brüt Kâr</span><span id="prev-ty-raw">—</span></div>
+        <div class="preview-row"><span>Ödenecek KDV Yükü</span><span id="prev-ty-vat" style="color:var(--accent-red)">—</span></div>
+        <div class="preview-row highlight-row" style="border-top-style: dashed; border-top-color: var(--border-strong);">
+  <span>Başa Baş Fiyatı (0 Kâr)</span>
+  <span id="prev-ty-be-fiyat" style="color: #fbbf24; font-weight: 700;">—</span>
+</div>
+<div class="preview-row">
+  <span>Maksimum İndirim Marjı</span>
+  <span id="prev-ty-max-discount" style="color: #fbbf24; font-weight: 700;">—</span>
+</div>
+        <div class="preview-row"><span>Net Kâr (KDV Sonrası)</span><span id="prev-ty-net" class="prev-profit-val">—</span></div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: 700; font-size: 14px;">
+            <span>Net Marj (%)</span>
+            <span id="prev-ty-margin-pct" data-testid="marj-badge"></span>
+         </div>
+      </div>
+      <div class="modal-preview hidden" id="prev-ty-curr-block" style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 15px;">
+        <div style="font-weight: 600; font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Trendyol Mevcut Satış Performansı</div>
+        <div class="preview-row"><span>Mevcut Fiyat</span><span id="prev-ty-curr-price" style="font-weight:600">—</span></div>
+        <div class="preview-row"><span>Mevcut Net Kâr</span><span id="prev-ty-curr-net" style="font-weight:600">—</span></div>
+        <div class="preview-row"><span>Mevcut Marj</span><span id="prev-ty-curr-margin" style="font-weight:700">—</span></div>
+      </div>
+      <div class="modal-error hidden" id="modal-ty-error" data-testid="grupb-hata"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" onclick="modalTyKapat()">İptal</button>
+      <button class="btn-modal-save" onclick="modalTyKaydet()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>Kaydet</button>
+    </div>
+  </div>
+<script src="amazon.js"></script>
+  <script src="app.js?v=2"></script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+          console.log('ServiceWorker registered:', reg.scope);
+        }).catch(err => console.log('ServiceWorker error:', err));
+      });
+    }
+  </script>
+</body>
+</html>
+
