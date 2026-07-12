@@ -59,10 +59,33 @@ function temizle(...ids) { ids.forEach(id=>{ const el=document.getElementById(id
             fiyatı 499,90'a sabitle.
    Kural 3: X,90 yukarı yuvarla.
 ══════════════════════════════════════════ */
-const KOMIS_DUS  = 0.108;  // %10,8
-const KOMIS_YUK  = 0.168;  // %16,8
+const KOMIS_DUS  = 0.108;  // %10,8 (geriye dönük uyumluluk için korundu)
+const KOMIS_YUK  = 0.168;  // %16,8 (geriye dönük uyumluluk için korundu)
 const SINIR      = 499.99;
-const OB_SABIT   = 499.90; // Ölü Bölge sabiti
+const OB_SABIT   = 499.90; // Ölü Bölge sabiti (geriye dönük uyumluluk için korundu)
+
+/* ══════════════════════════════════════════
+   MERKEZ KONFİGÜRASYON — Tüm sabit değerler
+══════════════════════════════════════════ */
+const APP_CONFIG = {
+  AMAZON: {
+    LIMIT_DEADZONE_LOW:  499.90,  // Ölü Bölge fiyat tavanı
+    LIMIT_DEADZONE_HIGH: 500.00,  // Komisyon kademesi değişim sınırı
+    COMM_LOW:            0.108,   // %10,8 — Kozmetik (<500 TL)
+    COMM_HIGH:           0.168,   // %16,8 — Kozmetik (>=500 TL)
+    COMM_SAGLIK:         0.162,   // %16,2 — Sağlık kategorisi sabit komisyon
+    COMM_DIGER:          0.108    // %10,8 — Diğer kategorisi sabit komisyon
+  },
+  TRENDYOL: {
+    GIZLI_GIDER:              6.61,  // Gizli sabit gider (komisyon+iade karşılığı)
+    SABIT_GIDER:              8.00,  // Sabit birim gider
+    IADE_PAYI:                1.03,  // İade payı (satış fiyatı > TRAFIK_LIMIT_FIYAT ise uygulanır)
+    HIZMET_BEDELI_STANDART:  13.19,  // Normal kargo hizmet bedeli
+    HIZMET_BEDELI_KAMPANYA:   5.99,  // Bugün kargoda kampanya hizmet bedeli
+    TRAFIK_LIMIT_FIYAT:      75.00,  // Grup B (Trafik) birim fiyat üst sınırı
+    TRAFIK_SABIT_MARJ:           2   // Grup B için sabit hedef marj (%2)
+  }
+};
 
 function parseBuyboxFiyat(val) {
   if (!val || val === "—" || val === "-" || val === "N/A") return null;
@@ -93,13 +116,13 @@ function breakEvenFiyatAmz(tm, kargo, kategori) {
   if (baseCost <= 0) return 0;
   let cat = String(kategori || "kozmetik").toLowerCase();
   
-  if (cat === "saglik") return Math.round((baseCost / (1 - 0.162)) * 100) / 100;
-  if (cat === "diger") return Math.round((baseCost / (1 - 0.108)) * 100) / 100;
+  if (cat === "saglik") return Math.round((baseCost / (1 - APP_CONFIG.AMAZON.COMM_SAGLIK)) * 100) / 100;
+  if (cat === "diger")  return Math.round((baseCost / (1 - APP_CONFIG.AMAZON.COMM_DIGER))  * 100) / 100;
   
-  let beLow = baseCost / (1 - 0.108);
-  if (beLow < 500) return Math.round(beLow * 100) / 100;
+  let beLow = baseCost / (1 - APP_CONFIG.AMAZON.COMM_LOW);
+  if (beLow < APP_CONFIG.AMAZON.LIMIT_DEADZONE_HIGH) return Math.round(beLow * 100) / 100;
   
-  return Math.round((baseCost / (1 - 0.168)) * 100) / 100;
+  return Math.round((baseCost / (1 - APP_CONFIG.AMAZON.COMM_HIGH)) * 100) / 100;
 }
 
 function amazonHesap(maliyet, ambalaj, sabit, kargo, hedefMarjPct, kategori, buyboxFiyat = null, currentPrice = 0) {
@@ -126,9 +149,9 @@ function amazonHesap(maliyet, ambalaj, sabit, kargo, hedefMarjPct, kategori, buy
 
   const curPriceVal = parseFloat(currentPrice) || 0;
   const getCommRate = (price, cat) => {
-    if (cat === 'saglik') return 0.162;
-    if (cat === 'diger') return 0.108;
-    return price < 500 ? 0.108 : 0.168;
+    if (cat === 'saglik') return APP_CONFIG.AMAZON.COMM_SAGLIK;
+    if (cat === 'diger')  return APP_CONFIG.AMAZON.COMM_DIGER;
+    return price < APP_CONFIG.AMAZON.LIMIT_DEADZONE_HIGH ? APP_CONFIG.AMAZON.COMM_LOW : APP_CONFIG.AMAZON.COMM_HIGH;
   };
 
   if (curPriceVal > 0) {
@@ -139,7 +162,7 @@ function amazonHesap(maliyet, ambalaj, sabit, kargo, hedefMarjPct, kategori, buy
   }
 
   if (c_kategori === "saglik" || c_kategori === "diger") {
-    const flatRate = c_kategori === "saglik" ? 0.162 : 0.108;
+    const flatRate = c_kategori === "saglik" ? APP_CONFIG.AMAZON.COMM_SAGLIK : APP_CONFIG.AMAZON.COMM_DIGER;
     const coef = 1 - flatRate - m;
     if (coef <= 0) return { hata: "Hedef marj bu komisyon oranı için çok yüksek.", currCommissionAmt, currNetProfit, currMargin };
     const fiyat = en90eYuvarla(toplMaliyet / coef);
@@ -156,10 +179,10 @@ function amazonHesap(maliyet, ambalaj, sabit, kargo, hedefMarjPct, kategori, buy
     };
   }
 
-  const KOMIS_DUS = 0.108;
-  const KOMIS_YUK = 0.168;
-  const SINIR = 500;
-  const OB_SABIT = 499.90;
+  const KOMIS_DUS = APP_CONFIG.AMAZON.COMM_LOW;
+  const KOMIS_YUK = APP_CONFIG.AMAZON.COMM_HIGH;
+  const SINIR     = APP_CONFIG.AMAZON.LIMIT_DEADZONE_HIGH;
+  const OB_SABIT  = APP_CONFIG.AMAZON.LIMIT_DEADZONE_LOW;
 
   const paydaDus = 1 - KOMIS_DUS - m;
   if (paydaDus <= 0) return { hata: "Hedef marj bu komisyon oranı için çok yüksek.", currCommissionAmt, currNetProfit, currMargin };
@@ -695,8 +718,8 @@ const BAREM_KURALLARI = [
 ];
 
 function calcGrupB(birimCogs, aktifKomis, kdv_t, hizmetBedeli, kargoKDVharic, kargoKDVdahil) {
-  const GIZLI_GIDER = 6.61;
-  const marj = 0.02;
+  const GIZLI_GIDER = APP_CONFIG.TRENDYOL.GIZLI_GIDER;
+  const marj = APP_CONFIG.TRENDYOL.TRAFIK_SABIT_MARJ / 100;
   const kdvMultiplier = kdv_t / (100 + kdv_t);
   const divisor = 1 - (aktifKomis / 100) - marj - kdvMultiplier;
   const divisorBE = 1 - (aktifKomis / 100) - kdvMultiplier;
@@ -753,8 +776,8 @@ function breakEvenFiyat(tm, komPct, kdvPct, hizmet, iadeA) {
   const coef = 1 - k - kdv_t;
   if (coef <= 0) return 0;
   
-  const GIZLI_GIDER = 6.61;
-  const SABIT_GIDER = 8.00;
+  const GIZLI_GIDER = APP_CONFIG.TRENDYOL.GIZLI_GIDER;
+  const SABIT_GIDER = APP_CONFIG.TRENDYOL.SABIT_GIDER;
   
   const bands = [
     { kh: 41.00 / (1 + kdvPct/100), kd: 41.00, lo: 0, hi: 199.99 },
@@ -791,11 +814,11 @@ function trendyolHesap(maliyet, ambalaj, sabit, ozelKomis, komisyonBitis, ozelMa
   }
 
   const marj = (ozelMarj === null || ozelMarj === undefined || isNaN(ozelMarj)) ? GP.tyMarj : ozelMarj;
-  const hizmetBedeli = bugunKargoda ? 5.99 : 13.19;
+  const hizmetBedeli = bugunKargoda ? APP_CONFIG.TRENDYOL.HIZMET_BEDELI_KAMPANYA : APP_CONFIG.TRENDYOL.HIZMET_BEDELI_STANDART;
 
   // Fixed overhead (deducted in netKar, NOT in brutKar)
-  const GIZLI_GIDER = 6.61;
-  const SABIT_GIDER = 8.00;
+  const GIZLI_GIDER = APP_CONFIG.TRENDYOL.GIZLI_GIDER;
+  const SABIT_GIDER = APP_CONFIG.TRENDYOL.SABIT_GIDER;
 
   // cogs = direct product costs (user-entered: Maliyet + Ambalaj + Sabit Maliyet/Birim)
   const cogs = maliyet + ambalaj + sabit;
@@ -838,7 +861,7 @@ function trendyolHesap(maliyet, ambalaj, sabit, ozelKomis, komisyonBitis, ozelMa
     const brutKar = salePrice - cogs - kargoKDVdahil - hizmetBedeli - komisyon;
 
     // 4. Net Profit — subtract fixed overhead, return allowance, and tax burden
-    const iadePayi = (salePrice > 75) ? 1.03 : 0;
+    const iadePayi = (salePrice > APP_CONFIG.TRENDYOL.TRAFIK_LIMIT_FIYAT) ? APP_CONFIG.TRENDYOL.IADE_PAYI : 0;
     const netKar   = brutKar - GIZLI_GIDER - SABIT_GIDER - iadePayi - netKDV;
 
     return { komisyon, netKDV, brutKar, iadePayi, netKar };
@@ -848,7 +871,7 @@ function trendyolHesap(maliyet, ambalaj, sabit, ozelKomis, komisyonBitis, ozelMa
   // Helper: minimum .90-rounded price satisfying the target margin
   // Uses VAT-exclusive shipping in cost base to match the VAT-inclusive divisor
   function getRawRecommended(kargoKDVdahil, hasReturn) {
-    const iadePayi      = hasReturn ? 1.03 : 0;
+    const iadePayi      = hasReturn ? APP_CONFIG.TRENDYOL.IADE_PAYI : 0;
     const kargoKDVharic = kargoKDVdahil / (1 + (vatSell / 100));
     const totalCostBase = cogs + hizmetBedeli + kargoKDVharic + GIZLI_GIDER + SABIT_GIDER + iadePayi;
     return trendyolRound90(totalCostBase / divisor);
