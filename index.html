@@ -27,6 +27,28 @@
     display:flex;align-items:center;justify-content:center;
     font-family:'Inter',system-ui,sans-serif;
   ">
+
+    <!-- STATE 1: Loading spinner (shown immediately on every page load) -->
+    <div id="auth-loading" style="text-align:center;">
+      <div style="
+        width:52px;height:52px;margin:0 auto 18px;
+        background:linear-gradient(135deg,#a78bfa,#60a5fa);
+        border-radius:14px;display:flex;align-items:center;justify-content:center;
+        font-weight:800;font-size:24px;color:#fff;
+        box-shadow:0 8px 24px rgba(167,139,250,.45);
+        animation:authPulse 1.8s ease-in-out infinite;
+      ">F</div>
+      <p style="color:#94a3b8;font-size:13px;margin:0;letter-spacing:.02em;">Yükleniyor…</p>
+    </div>
+    <style>
+      @keyframes authPulse {
+        0%,100%{transform:scale(1);box-shadow:0 8px 24px rgba(167,139,250,.45);}
+        50%{transform:scale(1.06);box-shadow:0 12px 32px rgba(167,139,250,.7);}
+      }
+    </style>
+
+    <!-- STATE 2: Login card (hidden until onAuthStateChanged confirms signed-out) -->
+    <div id="auth-login-card" style="display:none;width:100%;max-width:400px;">
     <div style="
       background:rgba(26,31,46,.95);
       border:1px solid rgba(167,139,250,.25);
@@ -107,6 +129,7 @@
         Erişim kısıtlıdır. Yalnızca yetkili kullanıcılar giriş yapabilir.
       </p>
     </div>
+    </div><!-- /auth-login-card -->
   </div>
   <!-- /AUTH GATE -->
 
@@ -417,6 +440,15 @@
           <div class="iw"><span class="ip">%</span><input type="number" id="modal-margin" placeholder="" min="0" max="99" step="0.1" /></div>
         </div>
       </div>
+      <!-- Bug 2 Fix: Mevcut Fiyat (₺) — Amazon -->
+      <div class="modal-row">
+        <div class="modal-field">
+          <label for="modal-current-price">Mevcut Fiyat (₺)
+            <span class="field-hint">isteğe bağlı</span>
+          </label>
+          <div class="iw"><span class="ip">₺</span><input type="number" id="modal-current-price" placeholder="0,00" min="0" step="0.01" /></div>
+        </div>
+      </div>
 
       <!-- Canlı Önizleme -->
       <div id="amazon-ledger-preview" style="background: var(--bg-darker); padding: 12px; border-radius: 8px;">
@@ -497,6 +529,15 @@
       </div>
       <div class="modal-row">
         <div class="modal-field"><label>Satış KDV (%)</label><div class="iw"><span class="ip">%</span><input type="number" id="modal-ty-vatsell" step="1" value="20"/></div></div>
+      </div>
+      <!-- Bug 2 Fix: Mevcut Fiyat (TY) -->
+      <div class="modal-row">
+        <div class="modal-field">
+          <label for="modal-ty-currentprice">Mevcut Fiyat (₺)
+            <span class="field-hint">isteğe bağlı</span>
+          </label>
+          <div class="iw"><span class="ip">₺</span><input type="number" id="modal-ty-currentprice" placeholder="0,00" min="0" step="0.01" /></div>
+        </div>
       </div>
       <div class="modal-field" style="flex-direction:row; align-items:center;">
         <input type="checkbox" id="modal-ty-today" style="width:16px;height:16px;margin-right:8px;" />

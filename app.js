@@ -366,8 +366,9 @@ function modalAc(urunId) {
     document.getElementById("modal-fixed").value  = p.sabit || 0;
     document.getElementById("modal-margin").value = p.bireyselMarj ?? "";
     document.getElementById("modal-amz-category").value = p.category || "kozmetik";
+    document.getElementById("modal-current-price").value = p.currentPrice || "";
   } else {
-    temizle("modal-name","modal-sku","modal-asin","modal-cost","modal-pkg","modal-fixed","modal-margin");
+    temizle("modal-name","modal-sku","modal-asin","modal-cost","modal-pkg","modal-fixed","modal-margin","modal-current-price");
     document.getElementById("modal-amz-category").value = "kozmetik";
   }
 
@@ -394,7 +395,7 @@ function modalOnizle() {
 
   const kat = document.getElementById("modal-amz-category").value;
   const existingProduct = modalMod ? STATE.amazon.find(x => x.id === modalMod) : null;
-  const currentPrice = existingProduct ? (existingProduct.currentPrice || 0) : 0;
+  const currentPrice = parseFloat(document.getElementById("modal-current-price").value) || (existingProduct ? (existingProduct.currentPrice || 0) : 0);
   const buybox = existingProduct ? (existingProduct.buyboxPrice || null) : null;
 
   const r = amazonHesap(maliyet, ambalaj, sabit, kargo, marj, kat, buybox, currentPrice);
@@ -735,10 +736,10 @@ function processAmazonRawCSV(metin) {
   amazonYenidenHesapla();
 
   const mesaj = [];
-  if (eklendi)     mesaj.push(eklendi + " yeni ürün eklendi");
-  if (guncellendi) mesaj.push(guncellendi + " ürün güncellendi (finansal veriler korundu)");
+  if (eklendi)     mesaj.push(eklendi + " yeni ürün eklendi. ⚠️ Önerilen fiyatları görmek için lütfen 'Düzenle' butonuna basarak maliyetleri giriniz.");
+  if (guncellendi) mesaj.push(guncellendi + " ürün güncellendi (finansal veriler korundu).");
 
-  const finalMsj = mesaj.length > 0 ? mesaj.join(" · ") + "." : "CSV'den geçerli ürün bulunamadı veya işlem yapılmadı.";
+  const finalMsj = mesaj.length > 0 ? mesaj.join(" · ") : "CSV'den geçerli ürün bulunamadı veya işlem yapılmadı.";
   gosterFeedback("amazon-import-feedback", finalMsj, mesaj.length === 0);
 }
 
@@ -1103,8 +1104,9 @@ function modalTyAc(id) {
     document.getElementById("modal-ty-vatsell").value = p.vatSell ?? 20;
     document.getElementById("modal-ty-today").checked = p.bugunKargoda || false;
     document.getElementById("modal-ty-traffic").checked = p.isTrafficStrategy || false;
+    document.getElementById("modal-ty-currentprice").value = p.currentPrice || "";
   } else {
-    temizle("modal-ty-name","modal-ty-sku","modal-ty-asin","modal-ty-cost","modal-ty-pkg","modal-ty-fixed","modal-ty-margin","modal-ty-customcomm","modal-ty-commdate");
+    temizle("modal-ty-name","modal-ty-sku","modal-ty-asin","modal-ty-cost","modal-ty-pkg","modal-ty-fixed","modal-ty-margin","modal-ty-customcomm","modal-ty-commdate","modal-ty-currentprice");
     document.getElementById("modal-ty-vatsell").value = 20;
     document.getElementById("modal-ty-today").checked = false;
     document.getElementById("modal-ty-traffic").checked = false;
@@ -1135,7 +1137,7 @@ function modalTyOnizle() {
   const isTraffic = document.getElementById("modal-ty-traffic").checked;
 
   const existingProduct = modalTyMod ? STATE.trendyol.find(x => x.id === modalTyMod) : null;
-  const currentPrice = existingProduct ? (existingProduct.currentPrice || 0) : 0;
+  const currentPrice = parseFloat(document.getElementById("modal-ty-currentprice").value) || (existingProduct ? (existingProduct.currentPrice || 0) : 0);
 
   // Expiration check for preview
   let finalOzelKomis = ozelKomis;
@@ -2394,7 +2396,7 @@ async function authCikisYap() {
  */
 function _bootstrapFirebaseAuth() {
   if (!window.DB || typeof window.DB.onAuthChange !== 'function') {
-    setTimeout(_bootstrapFirebaseAuth, 600);
+    setTimeout(_bootstrapFirebaseAuth, 100);
     return;
   }
 
@@ -2436,7 +2438,11 @@ function _bootstrapFirebaseAuth() {
         console.warn('[Femmelogy] Firestore hydration failed (localStorage fallback active):', hydErr);
       }
     } else {
-      // ── Signed out ──────────────────────────────────────────────────────
+      // ── Signed out: hide loading spinner, reveal login form ─────────────
+      var loadingEl = document.getElementById('auth-loading');
+      var loginCard = document.getElementById('auth-login-card');
+      if (loadingEl) loadingEl.style.display = 'none';
+      if (loginCard) loginCard.style.display  = 'block';
       _showAuthOverlay();
     }
   });
