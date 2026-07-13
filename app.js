@@ -170,6 +170,11 @@ function amazonHesap(maliyet, ambalaj, sabit, kargo, hedefMarjPct, kategori, buy
     const netKar = fiyat - toplMaliyet - komisyonT;
     const gercekM = (netKar / fiyat) * 100;
 
+    // GUARDRAIL: Flash Crash Protection (Flat Category)
+    if (fiyat > 0 && beFiyat > 0 && fiyat < beFiyat) {
+      return { hata: "Sistem Sigortası (Flash Crash): Önerilen fiyat (" + fiyat + " ₺), başa baş zarar sınırının (" + beFiyat.toFixed(2) + " ₺) altındadır. İşlem bloke edildi.", currCommissionAmt, currNetProfit, currMargin };
+    }
+
     return {
       satisF: fiyat, komisyonO: flatRate * 100, komisyonT,
       breakEvenPrice: beFiyat, maxDiscount: (fiyat > 0 && beFiyat > 0 ? ((fiyat - beFiyat) / fiyat) * 100 : 0),
@@ -198,6 +203,12 @@ function amazonHesap(maliyet, ambalaj, sabit, kargo, hedefMarjPct, kategori, buy
       if (nk499 > 0) {
         const komisyonT = OB_SABIT * KOMIS_DUS;
         const gercekM = (nk499 / OB_SABIT) * 100;
+
+        // GUARDRAIL: Flash Crash Protection (Dead Zone Rescue)
+        if (OB_SABIT > 0 && beFiyat > 0 && OB_SABIT < beFiyat) {
+          return { hata: "Sistem Sigortası (Flash Crash): Önerilen fiyat (" + OB_SABIT + " ₺), başa baş zarar sınırının (" + beFiyat.toFixed(2) + " ₺) altındadır. İşlem bloke edildi.", currCommissionAmt, currNetProfit, currMargin };
+        }
+
         return {
           satisF: OB_SABIT, komisyonO: KOMIS_DUS * 100, komisyonT,
           breakEvenPrice: beFiyat, maxDiscount: (OB_SABIT > 0 && beFiyat > 0 ? ((OB_SABIT - beFiyat) / OB_SABIT) * 100 : 0),
@@ -221,6 +232,12 @@ function amazonHesap(maliyet, ambalaj, sabit, kargo, hedefMarjPct, kategori, buy
       const komisyonT = OB_SABIT * KOMIS_DUS;
       const netKar = OB_SABIT - toplMaliyet - komisyonT;
       const gercekM = (netKar / OB_SABIT) * 100;
+
+      // GUARDRAIL: Flash Crash Protection (Dead Zone OB_SABIT)
+      if (OB_SABIT > 0 && beFiyat > 0 && OB_SABIT < beFiyat) {
+        return { hata: "Sistem Sigortası (Flash Crash): Önerilen fiyat (" + OB_SABIT + " ₺), başa baş zarar sınırının (" + beFiyat.toFixed(2) + " ₺) altındadır. İşlem bloke edildi.", currCommissionAmt, currNetProfit, currMargin };
+      }
+
       return {
         satisF: OB_SABIT, komisyonO: KOMIS_DUS * 100, komisyonT,
         breakEvenPrice: beFiyat, maxDiscount: (OB_SABIT > 0 && beFiyat > 0 ? ((OB_SABIT - beFiyat) / OB_SABIT) * 100 : 0),
@@ -232,6 +249,12 @@ function amazonHesap(maliyet, ambalaj, sabit, kargo, hedefMarjPct, kategori, buy
       const komisyonT = fiyatYuk * KOMIS_YUK;
       const netKar = fiyatYuk - toplMaliyet - komisyonT;
       const gercekM = (netKar / fiyatYuk) * 100;
+
+      // GUARDRAIL: Flash Crash Protection (K_HIGH tier)
+      if (fiyatYuk > 0 && beFiyat > 0 && fiyatYuk < beFiyat) {
+        return { hata: "Sistem Sigortası (Flash Crash): Önerilen fiyat (" + fiyatYuk + " ₺), başa baş zarar sınırının (" + beFiyat.toFixed(2) + " ₺) altındadır. İşlem bloke edildi.", currCommissionAmt, currNetProfit, currMargin };
+      }
+
       return {
         satisF: fiyatYuk, komisyonO: KOMIS_YUK * 100, komisyonT,
         breakEvenPrice: beFiyat, maxDiscount: (fiyatYuk > 0 && beFiyat > 0 ? ((fiyatYuk - beFiyat) / fiyatYuk) * 100 : 0),
@@ -246,6 +269,12 @@ function amazonHesap(maliyet, ambalaj, sabit, kargo, hedefMarjPct, kategori, buy
   const komisyonT = fiyatDus * KOMIS_DUS;
   const netKar = fiyatDus - toplMaliyet - komisyonT;
   const gercekM = (netKar / fiyatDus) * 100;
+
+  // GUARDRAIL: Flash Crash Protection (K_LOW fallback)
+  if (fiyatDus > 0 && beFiyat > 0 && fiyatDus < beFiyat) {
+    return { hata: "Sistem Sigortası (Flash Crash): Önerilen fiyat (" + fiyatDus + " ₺), başa baş zarar sınırının (" + beFiyat.toFixed(2) + " ₺) altındadır. İşlem bloke edildi.", currCommissionAmt, currNetProfit, currMargin };
+  }
+
   return {
     satisF: fiyatDus, komisyonO: KOMIS_DUS * 100, komisyonT,
     breakEvenPrice: beFiyat, maxDiscount: (fiyatDus > 0 && beFiyat > 0 ? ((fiyatDus - beFiyat) / fiyatDus) * 100 : 0),
@@ -987,8 +1016,19 @@ function trendyolHesap(maliyet, ambalaj, sabit, ozelKomis, komisyonBitis, ozelMa
   const rec = calcFullProfit(satisF, finalKargo);
   
   // Calculate Break-Even & Max Discount
-  const beFiyat = breakEvenFiyat(cogs, aktifKomis, vatSell, hizmetBedeli, (satisF > 75 ? 1.03 : 0));
+  const beFiyat = breakEvenFiyat(cogs, aktifKomis, vatSell, hizmetBedeli, (satisF > APP_CONFIG.TRENDYOL.TRAFIK_LIMIT_FIYAT ? APP_CONFIG.TRENDYOL.IADE_PAYI : 0));
   const maksIndirim = (satisF > 0 && beFiyat > 0) ? ((satisF - beFiyat) / satisF) * 100 : 0;
+
+  // GUARDRAIL: Flash Crash Protection (Trendyol Final Price)
+  if (satisF > 0 && beFiyat > 0 && satisF < beFiyat) {
+    return {
+      hata: "Sistem Sigortası (Flash Crash): Önerilen fiyat (" + satisF + " ₺), başa baş zarar sınırının (" + beFiyat.toFixed(2) + " ₺) altındadır. İşlem bloke edildi.",
+      missingCogs: false, satisF: 0, rawProfit: 0, netVAT: 0, netProfit: 0,
+      finalKargo: 0, hizmetBedeli, aktifKomis, baremOpt: false,
+      currShipping: 0, currCommissionAmt: 0, currRawProfit: 0,
+      currNetVat: 0, currNetProfit: 0, currMargin: null
+    };
+  }
 
   // Step 5: Current price profitability (shown in modal edit view)
   let currShipping = 0, currCommissionAmt = 0, currRawProfit = 0;

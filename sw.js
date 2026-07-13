@@ -1,4 +1,4 @@
-const CACHE_NAME = 'femmelogy-v19-cache';
+const CACHE_NAME = 'femmelogy-v20-cache';
 const urlsToCache = [
   './',
   './index.html',
@@ -36,6 +36,7 @@ self.addEventListener('activate', event => {
     })
   );
 });
+
 
 
 
