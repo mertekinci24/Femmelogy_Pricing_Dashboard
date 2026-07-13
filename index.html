@@ -548,10 +548,11 @@
       <button class="btn-modal-save" onclick="modalTyKaydet()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>Kaydet</button>
     </div>
   </div>
-<script src="amazon.js"></script>
-  <script src="app.js?v=3"></script>
-  <!-- Firebase Repository Layer (ES Module) -->
+  <!-- Firebase Repository Layer — loaded as ES Module (always deferred by browser spec) -->
   <script type="module" src="firebase-db.js"></script>
+<script src="amazon.js"></script>
+  <script src="app.js?v=4"></script>
+
 
   <script>
     if ('serviceWorker' in navigator) {

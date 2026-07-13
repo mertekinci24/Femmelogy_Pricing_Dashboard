@@ -5,6 +5,10 @@
  * app.js NEVER imports Firebase SDK directly — all Firestore/Auth operations
  * go through the `DB` object exposed on window.DB.
  *
+ * NOTE: firebase-config.js credentials are inlined here to avoid relative
+ * import resolution issues on Firebase Hosting CDN. This file is served
+ * directly; a separate firebase-config.js is still kept locally and gitignored.
+ *
  * Public API:
  *   DB.init(userId)           — Set active user namespace
  *   DB.isReady                — Boolean: is DB initialised and user authenticated?
@@ -19,7 +23,16 @@
  *   DB.enableOffline()        — Enable IndexedDB offline persistence
  */
 
-import { firebaseConfig } from './firebase-config.js';
+// ─── Firebase Config (inlined — firebase-config.js kept as local backup only)
+const firebaseConfig = {
+  apiKey:            "AIzaSyDRGaU6R6mo-LlBzmQLtY60D2cs75qnaPE",
+  authDomain:        "femmelogy-pricing-engine.firebaseapp.com",
+  projectId:         "femmelogy-pricing-engine",
+  storageBucket:     "femmelogy-pricing-engine.firebasestorage.app",
+  messagingSenderId: "1063762457017",
+  appId:             "1:1063762457017:web:c7de1a47c64b7c13c28668"
+};
+
 import { initializeApp }  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {
   getFirestore,
@@ -206,10 +219,13 @@ const DB = {
 
 };
 
-// Expose globally so non-module app.js can access DB
+// ─── Global exposure ─────────────────────────────────────────────────────────
+// ES Modules run in strict isolated scope. Explicitly attach DB to window so
+// non-module app.js scripts can access window.DB from their global context.
 window.DB = DB;
+console.log('[firebase-db.js] window.DB is now globally available. isReady:', DB.isReady);
 
-// Enable offline persistence immediately on module load
+// Enable Firestore offline persistence immediately on module load
 DB.enableOffline();
 
 export { DB };
