@@ -487,7 +487,7 @@ function modalKaydet() {
 
   const kat = document.getElementById("modal-amz-category").value;
   const existingProduct = modalMod ? STATE.amazon.find(x => x.id === modalMod) : null;
-  const currentPrice = existingProduct ? (existingProduct.currentPrice || 0) : 0;
+  const currentPrice = parseFloat(document.getElementById("modal-current-price").value) || 0;
   const buybox = existingProduct ? (existingProduct.buyboxPrice || null) : null;
 
   if (!ad) { hata("modal-error","Ürün adı zorunludur."); return; }
@@ -502,9 +502,9 @@ function modalKaydet() {
 
   if (modalMod) {
     const idx = STATE.amazon.findIndex(x => x.id === modalMod);
-    if (idx !== -1) STATE.amazon[idx] = { ...STATE.amazon[idx], ...yeniVeri };
+    if (idx !== -1) STATE.amazon[idx] = { ...STATE.amazon[idx], ...yeniVeri, currentPrice: currentPrice };
   } else {
-    STATE.amazon.push({ id: Date.now(), ...yeniVeri });
+    STATE.amazon.push({ id: Date.now(), ...yeniVeri, currentPrice: currentPrice });
   }
 
   kaydet("amazon");
@@ -1263,7 +1263,7 @@ function modalTyKaydet() {
   const isTraffic = document.getElementById("modal-ty-traffic").checked;
 
   const existingProduct = modalTyMod ? STATE.trendyol.find(x => x.id === modalTyMod) : null;
-  const currentPrice = existingProduct ? (existingProduct.currentPrice || 0) : 0;
+  const currentPrice = parseFloat(document.getElementById("modal-ty-currentprice").value) || 0;
 
   if (!ad) { hata("modal-ty-error","Ürün adı zorunludur."); return; }
 
@@ -1298,9 +1298,9 @@ function modalTyKaydet() {
 
   if (modalTyMod) {
     const idx = STATE.trendyol.findIndex(x => x.id === modalTyMod);
-    if (idx !== -1) STATE.trendyol[idx] = { ...STATE.trendyol[idx], ...yeni };
+    if (idx !== -1) STATE.trendyol[idx] = { ...STATE.trendyol[idx], ...yeni, currentPrice: currentPrice };
   } else {
-    STATE.trendyol.push({ id: Date.now(), ...yeni });
+    STATE.trendyol.push({ id: Date.now(), ...yeni, currentPrice: currentPrice });
   }
 
   kaydet("trendyol");
