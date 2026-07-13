@@ -1,0 +1,17 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "scratch/**",
+      "firebase-config.js",
+      "fbm_upgrade.py",
+      "fix_logic.py",
+      "Claude_*.md",
+      "Femmelogy_Enterprise_Audit_Report_v3.md",
+      "Firebase_Migration_Strategy.md"
+    ]
+  }
+}
