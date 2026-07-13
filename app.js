@@ -20,13 +20,27 @@ const GP = {
 };
 
 /* ══════════════════════════════════════════
-   DURUM — localStorage
+   DURUM — localStorage (Birincil Katman)
+   Firebase Firestore (İkincil Katman — Arka Plan Senkronizasyonu)
 ══════════════════════════════════════════ */
 const STATE = {
   amazon:   JSON.parse(localStorage.getItem("femmelogy_amazon")   || "[]"),
   trendyol: JSON.parse(localStorage.getItem("femmelogy_trendyol") || "[]"),
 };
-function kaydet(p) { localStorage.setItem("femmelogy_" + p, JSON.stringify(STATE[p])); }
+
+/**
+ * kaydet(platform) — Double-Write Pattern
+ * Layer 1: localStorage (senkron, garantili) — her zaman çalışır
+ * Layer 2: Firestore (asenkron, fire-and-forget) — DB hazırsa çalışır
+ */
+function kaydet(p) {
+  // Layer 1: Synchronous localStorage (DO NOT REMOVE)
+  localStorage.setItem("femmelogy_" + p, JSON.stringify(STATE[p]));
+  // Layer 2: Fire-and-forget Firestore sync (non-blocking)
+  if (window.DB && window.DB.isReady) {
+    window.DB.save(p, STATE[p]).catch(err => console.error("[Femmelogy] Firestore sync failed:", err));
+  }
+}
 
 /* ══════════════════════════════════════════
    YARDIMCILAR
@@ -2273,3 +2287,162 @@ function routeTrendyolImport(event) {
     }
   });
 }
+
+
+/* ══════════════════════════════════════════
+   FİREBASE AUTH GATE — Giriş / Çıkış Kontrolleri
+   ──────────────────────────────────────────
+   authGirisYap()  → index.html "Giriş Yap" butonuna bağlı
+   authCikisYap()  → sidebar "Çıkış" butonuna bağlı
+   _bootstrapFirebaseAuth → State Hydration Pattern bootstrap
+   (DOMContentLoaded ile tetiklenir)
+══════════════════════════════════════════ */
+
+function _authSetLoading(isLoading) {
+  var btn = document.getElementById('auth-btn');
+  if (!btn) return;
+  btn.textContent = isLoading ? 'Giriş yapılıyor…' : 'Giriş Yap';
+  btn.disabled = isLoading;
+  btn.style.opacity = isLoading ? '0.7' : '1';
+}
+
+function _authShowError(msg) {
+  var el = document.getElementById('auth-error');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+
+function _showDashboard(userEmail) {
+  var overlay = document.getElementById('auth-overlay');
+  var logoutBtn = document.getElementById('auth-logout-btn');
+  if (overlay) overlay.style.display = 'none';
+  if (logoutBtn) {
+    logoutBtn.style.display = 'inline-flex';
+    logoutBtn.title = 'Çıkış: ' + (userEmail || '');
+  }
+}
+
+function _showAuthOverlay() {
+  var overlay = document.getElementById('auth-overlay');
+  var logoutBtn = document.getElementById('auth-logout-btn');
+  var errEl = document.getElementById('auth-error');
+  if (overlay) overlay.style.display = 'flex';
+  if (logoutBtn) logoutBtn.style.display = 'none';
+  if (errEl) errEl.style.display = 'none';
+  _authSetLoading(false);
+}
+
+/**
+ * Global: "Giriş Yap" butonuna bağlı (index.html onclick)
+ */
+async function authGirisYap() {
+  var emailEl = document.getElementById('auth-email');
+  var passEl  = document.getElementById('auth-password');
+  var email    = emailEl ? emailEl.value.trim() : '';
+  var password = passEl  ? passEl.value.trim()  : '';
+
+  _authShowError('');
+  if (!email || !password) {
+    _authShowError('E-posta ve şifre zorunludur.');
+    return;
+  }
+  _authSetLoading(true);
+
+  try {
+    // Wait for firebase-db.js module to initialise if needed
+    if (!window.DB) {
+      await new Promise(function(resolve) { setTimeout(resolve, 1500); });
+    }
+    if (!window.DB) {
+      _authShowError('Firebase henüz yüklenmedi. Lütfen sayfayı yenileyin.');
+      _authSetLoading(false);
+      return;
+    }
+    await window.DB.login(email, password);
+    // onAuthStateChanged fires → _showDashboard() called automatically
+  } catch (err) {
+    _authSetLoading(false);
+    var friendlyMsg =
+      err.code === 'auth/wrong-password'          ? 'Hatalı şifre. Lütfen tekrar deneyin.'         :
+      err.code === 'auth/user-not-found'          ? 'Bu e-posta ile kayıtlı kullanıcı bulunamadı.' :
+      err.code === 'auth/invalid-credential'      ? 'E-posta veya şifre hatalı.'                   :
+      err.code === 'auth/invalid-email'           ? 'Geçersiz e-posta adresi.'                     :
+      err.code === 'auth/too-many-requests'       ? 'Çok fazla deneme. Lütfen bekleyin.'            :
+      err.code === 'auth/network-request-failed'  ? 'İnternet bağlantısı hatası.'                  :
+      'Giriş başarısız: ' + (err.message || err.code);
+    _authShowError(friendlyMsg);
+  }
+}
+
+/**
+ * Global: sidebar "Çıkış" butonuna bağlı (index.html onclick)
+ */
+async function authCikisYap() {
+  try {
+    if (window.DB) await window.DB.logout();
+  } catch (e) {
+    console.error('[Femmelogy] Logout error:', e);
+  }
+  // onAuthStateChanged fires with null → _showAuthOverlay() called automatically
+}
+
+/**
+ * State Hydration Bootstrap.
+ * Polls until firebase-db.js module sets window.DB, then registers
+ * the onAuthStateChanged listener.
+ */
+function _bootstrapFirebaseAuth() {
+  if (!window.DB || typeof window.DB.onAuthChange !== 'function') {
+    setTimeout(_bootstrapFirebaseAuth, 600);
+    return;
+  }
+
+  window.DB.onAuthChange(async function(user) {
+    if (user) {
+      // ── Authenticated ──────────────────────────────────────────────────
+      window.DB.init(user.uid);
+      _showDashboard(user.email);  // Dashboard visible immediately (localStorage in STATE)
+
+      // Background: hydrate STATE from Firestore
+      try {
+        var results  = await Promise.all([
+          window.DB.load('amazon'),
+          window.DB.load('trendyol')
+        ]);
+        var amzData = results[0];
+        var tyData  = results[1];
+        var changed = false;
+
+        if (amzData && amzData.length > 0) {
+          STATE.amazon = amzData;
+          localStorage.setItem('femmelogy_amazon', JSON.stringify(amzData));
+          changed = true;
+        }
+        if (tyData && tyData.length > 0) {
+          STATE.trendyol = tyData;
+          localStorage.setItem('femmelogy_trendyol', JSON.stringify(tyData));
+          changed = true;
+        }
+
+        if (changed) {
+          if (typeof amazonRender   === 'function') amazonRender();
+          if (typeof trendyolRender === 'function') trendyolRender();
+        }
+
+        console.log('[Femmelogy] Firestore hydration OK. AMZ:', (amzData || []).length, 'TY:', (tyData || []).length);
+      } catch (hydErr) {
+        // Graceful fallback: localStorage cache remains active
+        console.warn('[Femmelogy] Firestore hydration failed (localStorage fallback active):', hydErr);
+      }
+    } else {
+      // ── Signed out ──────────────────────────────────────────────────────
+      _showAuthOverlay();
+    }
+  });
+}
+
+// Bootstrap on DOM ready (firebase-db.js module loads in parallel)
+document.addEventListener('DOMContentLoaded', function() {
+  _bootstrapFirebaseAuth();
+});

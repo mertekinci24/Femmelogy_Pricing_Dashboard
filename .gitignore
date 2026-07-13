@@ -1,0 +1,11 @@
+# Firebase credentials — NEVER commit to git
+firebase-config.js
+
+# Node
+node_modules/
+
+# Firebase local emulator artifacts
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
