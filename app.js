@@ -704,9 +704,9 @@ function processAmazonRawCSV(metin) {
     // Benzersiz anahtar: önce ASIN, yoksa SKU
     const anahtar = asin || sku;
 
-    // Mevcut ürünü ara (ASIN veya SKU eşleşmesi)
+    // Mevcut ürünü ara (ASIN ve SKU eşleşmesi)
     const mevcutIdx = STATE.amazon.findIndex(p =>
-      (asin && p.asin === asin) || (!asin && sku && p.sku === sku)
+      asin && sku && p.asin === asin && p.sku === sku
     );
 
     if (mevcutIdx !== -1) {
@@ -2122,7 +2122,7 @@ function processSystemAmazonBulk(rows) {
     const sku = row["SKU"] || "";
     const ad = row["Ürün Adı"] || "İsimsiz Ürün";
     
-    let targetIdx = STATE.amazon.findIndex(p => (asin && p.asin === asin) || (sku && p.sku === sku));
+    let targetIdx = STATE.amazon.findIndex(p => asin && sku && p.asin === asin && p.sku === sku);
     
     const parsedMaliyet = parseExcelNum(row["Ürün Maliyeti (₺)"]) || 0;
     const parsedAmbalaj = parseExcelNum(row["Ambalaj Maliyeti (₺)"]) || 0;
