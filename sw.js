@@ -1,4 +1,4 @@
-const CACHE_NAME = 'femmelogy-v25-cache';
+const CACHE_NAME = 'femmelogy-v26-cache';
 const urlsToCache = [
   './',
   './index.html',

@@ -122,7 +122,7 @@ function parseBuyboxFiyat(val) {
     }
     total += parseFloat(clean) || 0;
   }
-  return valid ? total : null;
+  return valid ? Math.round(total * 100) / 100 : null;
 }
 
 function breakEvenFiyatAmz(tm, kargo, kategori) {
@@ -575,7 +575,7 @@ function amazonRender() {
     let bbCell = '';
     if (p.currentPrice === 0 && !p.buyboxPrice) {
       bbCell = '<td style="text-align: center; color: var(--text-muted);">—</td>';
-    } else if (!p.buyboxPrice || p.buyboxPrice === 0 || p.currentPrice <= p.buyboxPrice) {
+    } else if (!p.buyboxPrice || p.buyboxPrice === 0 || p.currentPrice <= (p.buyboxPrice + 0.01)) {
       bbCell = '<td style="text-align: center; font-size: 16px; cursor: help;" title="Buybox Bizde">✅</td>';
     } else {
       bbCell = '<td style="text-align: center; font-size: 16px; cursor: help;" title="Buybox Rakipte">❌</td>';
@@ -1374,7 +1374,7 @@ function trendyolRender() {
     let bbCell = '<td style="text-align: center; color: var(--text-muted);">—</td>';
     if (p.currentPrice === 0 && !p.buyboxPrice) {
       bbCell = '<td style="text-align: center; color: var(--text-muted);">—</td>';
-    } else if (!p.buyboxPrice || p.buyboxPrice === 0 || p.currentPrice <= p.buyboxPrice) {
+    } else if (!p.buyboxPrice || p.buyboxPrice === 0 || p.currentPrice <= (p.buyboxPrice + 0.01)) {
       bbCell = '<td style="text-align: center; font-size: 16px; cursor: help;" title="Buybox Bizde">✅</td>';
     } else {
       bbCell = '<td style="text-align: center; font-size: 16px; cursor: help;" title="Buybox Rakipte">❌</td>';
