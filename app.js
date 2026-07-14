@@ -133,6 +133,27 @@ const STATE = {
   trendyol: JSON.parse(localStorage.getItem("femmelogy_trendyol") || "[]"),
 };
 
+// Schema v2 Migration (Global Default + Local Overrides)
+const SCHEMA_VERSION = 2;
+function runSchemaMigration() {
+  const currentVer = parseInt(localStorage.getItem("femmelogy_schema_version") || "1");
+  if (currentVer < SCHEMA_VERSION) {
+    STATE.amazon = STATE.amazon.map(p => ({
+      isFBA: false,
+      fbaKargo: null,
+      ...p
+    }));
+    STATE.trendyol = STATE.trendyol.map(p => ({
+      customShipping: null,
+      ...p
+    }));
+    localStorage.setItem("femmelogy_schema_version", SCHEMA_VERSION.toString());
+    localStorage.setItem("femmelogy_amazon", JSON.stringify(STATE.amazon));
+    localStorage.setItem("femmelogy_trendyol", JSON.stringify(STATE.trendyol));
+  }
+}
+runSchemaMigration();
+
 /**
  * kaydet(platform) — Double-Write Pattern
  * Layer 1: localStorage (senkron, garantili) — her zaman çalışır
@@ -472,9 +493,14 @@ function modalAc(urunId) {
     document.getElementById("modal-margin").value = p.bireyselMarj ?? "";
     document.getElementById("modal-amz-category").value = p.category || "kozmetik";
     document.getElementById("modal-current-price").value = p.currentPrice || "";
+    document.getElementById("modal-fba-toggle").checked = p.isFBA || false;
+    document.getElementById("modal-fba-kargo").value = p.fbaKargo || "";
+    document.getElementById("fba-kargo-wrapper").style.display = p.isFBA ? "block" : "none";
   } else {
-    temizle("modal-name","modal-sku","modal-asin","modal-cost","modal-pkg","modal-fixed","modal-margin","modal-current-price");
+    temizle("modal-name","modal-sku","modal-asin","modal-cost","modal-pkg","modal-fixed","modal-margin","modal-current-price","modal-fba-kargo");
     document.getElementById("modal-amz-category").value = "kozmetik";
+    document.getElementById("modal-fba-toggle").checked = false;
+    document.getElementById("fba-kargo-wrapper").style.display = "none";
   }
 
   document.getElementById("modal-backdrop").classList.remove("hidden");
@@ -495,7 +521,12 @@ function modalOnizle() {
   const sabit   = parseFloat(document.getElementById("modal-fixed").value) || 0;
   const marjInp = parseFloat(document.getElementById("modal-margin").value);
   const marj    = isNaN(marjInp) ? GP.marj : marjInp;
-  const kargo   = GP.kargo;
+  
+  const isFBA = document.getElementById("modal-fba-toggle").checked;
+  const parsedFBA = parseFloat(document.getElementById("modal-fba-kargo").value);
+  const fbaKargo = (isFBA && !isNaN(parsedFBA) && parsedFBA > 0) ? parsedFBA : null;
+  const kargo   = (isFBA && fbaKargo !== null) ? fbaKargo : GP.kargo;
+  
   const toplam  = maliyet + ambalaj + sabit;
 
   const kat = document.getElementById("modal-amz-category").value;
@@ -590,6 +621,11 @@ function modalKaydet() {
   const bireyselMarj = isNaN(marjInp) ? null : marjInp;
   const marj   = bireyselMarj ?? GP.marj;
 
+  const isFBA = document.getElementById("modal-fba-toggle").checked;
+  const parsedFBA = parseFloat(document.getElementById("modal-fba-kargo").value);
+  const fbaKargo = (isFBA && !isNaN(parsedFBA) && parsedFBA > 0) ? parsedFBA : null;
+  const finalKargo = (isFBA && fbaKargo !== null) ? fbaKargo : GP.kargo;
+
   const kat = document.getElementById("modal-amz-category").value;
   const existingProduct = modalMod ? STATE.amazon.find(x => x.id === modalMod) : null;
   const currentPrice = parseFloat(document.getElementById("modal-current-price").value) || 0;
@@ -597,11 +633,12 @@ function modalKaydet() {
 
   if (!ad) { hata("modal-error","Ürün adı zorunludur."); return; }
 
-  const r = amazonHesap(maliyet, ambalaj, sabit, GP.kargo, marj, kat, buybox, currentPrice);
+  const r = amazonHesap(maliyet, ambalaj, sabit, finalKargo, marj, kat, buybox, currentPrice);
   if (r.hata) { hata("modal-error", r.hata); return; }
 
   const yeniVeri = { 
     ad, sku, asin, maliyet, ambalaj, sabit, bireyselMarj, 
+    isFBA, fbaKargo,
     currentPrice, category: kat, buyboxPrice: buybox, ...r 
   };
 
@@ -1000,7 +1037,7 @@ function breakEvenFiyat(tm, komPct, kdvPct, hizmet, iadeA) {
   return 0;
 }
 
-function trendyolHesap(maliyet, ambalaj, sabit, ozelKomis, komisyonBitis, ozelMarj, vatSell, bugunKargoda, currentPrice, isTrafficStrategy = false) {
+function trendyolHesap(maliyet, ambalaj, sabit, ozelKomis, komisyonBitis, ozelMarj, vatSell, bugunKargoda, currentPrice, isTrafficStrategy = false, customShipping = null) {
   let aktifKomis = GP.tyKomis;
   const ozelKomisNum = parseFloat(ozelKomis);
   if (ozelKomis !== null && ozelKomis !== undefined && ozelKomis !== "" && !isNaN(ozelKomisNum)) {
@@ -1093,7 +1130,11 @@ function trendyolHesap(maliyet, ambalaj, sabit, ozelKomis, komisyonBitis, ozelMa
       
       const curPriceVal = parseFloat(currentPrice) || 0;
       if (curPriceVal > 0) {
-        currShipping = curPriceVal <= 199.99 ? 41.00 : curPriceVal <= 349.99 ? 79.00 : GP.tyKargo;
+        if (customShipping !== null && customShipping > 0) {
+          currShipping = customShipping;
+        } else {
+          currShipping = curPriceVal <= 199.99 ? 41.00 : curPriceVal <= 349.99 ? 79.00 : GP.tyKargo;
+        }
         const curr = calcFullProfit(curPriceVal, currShipping);
         currCommissionAmt = curr.komisyon;
         currRawProfit     = curr.brutKar;
@@ -1138,11 +1179,17 @@ function trendyolHesap(maliyet, ambalaj, sabit, ozelKomis, komisyonBitis, ozelMa
 
   // Step 1, 2 & 3: Global Profit Maximizer (Candidate Approach)
   const candidates = [];
-  const kargoTiers = [
-    { kargo: 41.00, min: 0, max: 199.99 },
-    { kargo: 79.00, min: 200, max: 349.99 },
-    { kargo: GP.tyKargo, min: 350, max: Infinity }
-  ];
+  
+  let kargoTiers;
+  if (customShipping !== null && customShipping > 0) {
+    kargoTiers = [ { kargo: customShipping, min: 0, max: Infinity } ];
+  } else {
+    kargoTiers = [
+      { kargo: 41.00, min: 0, max: 199.99 },
+      { kargo: 79.00, min: 200, max: 349.99 },
+      { kargo: GP.tyKargo, min: 350, max: Infinity }
+    ];
+  }
 
   for (let tier of kargoTiers) {
     for (let hasReturn of [false, true]) {
@@ -1266,8 +1313,9 @@ function modalTyAc(id) {
     document.getElementById("modal-ty-today").checked = p.bugunKargoda || false;
     document.getElementById("modal-ty-traffic").checked = p.isTrafficStrategy || false;
     document.getElementById("modal-ty-currentprice").value = p.currentPrice || "";
+    document.getElementById("modal-ty-custom-shipping").value = p.customShipping || "";
   } else {
-    temizle("modal-ty-name","modal-ty-sku","modal-ty-asin","modal-ty-cost","modal-ty-pkg","modal-ty-fixed","modal-ty-margin","modal-ty-customcomm","modal-ty-commdate","modal-ty-currentprice");
+    temizle("modal-ty-name","modal-ty-sku","modal-ty-asin","modal-ty-cost","modal-ty-pkg","modal-ty-fixed","modal-ty-margin","modal-ty-customcomm","modal-ty-commdate","modal-ty-currentprice","modal-ty-custom-shipping");
     document.getElementById("modal-ty-vatsell").value = 20;
     document.getElementById("modal-ty-today").checked = false;
     document.getElementById("modal-ty-traffic").checked = false;
@@ -1296,6 +1344,9 @@ function modalTyOnizle() {
   const vatSell = parseFloat(document.getElementById("modal-ty-vatsell").value) || 20;
   const bugun = document.getElementById("modal-ty-today").checked;
   const isTraffic = document.getElementById("modal-ty-traffic").checked;
+  
+  const customShippingVal = parseFloat(document.getElementById("modal-ty-custom-shipping").value);
+  const customShipping = (!isNaN(customShippingVal) && customShippingVal > 0) ? customShippingVal : null;
 
   const existingProduct = modalTyMod ? STATE.trendyol.find(x => x.id === modalTyMod) : null;
   const currentPrice = parseFloat(document.getElementById("modal-ty-currentprice").value) || (existingProduct ? (existingProduct.currentPrice || 0) : 0);
@@ -1313,7 +1364,7 @@ function modalTyOnizle() {
     }
   }
 
-  const r = trendyolHesap(mal, amb, sab, finalOzelKomis, finalKomisyonBitis, marj, vatSell, bugun, currentPrice, isTraffic);
+  const r = trendyolHesap(mal, amb, sab, finalOzelKomis, finalKomisyonBitis, marj, vatSell, bugun, currentPrice, isTraffic, customShipping);
   if (r.hata) {
     const isMissing = r.missingCogs === true;
     const placeholder = isMissing ? "⚠️ Maliyet Giriniz" : "—";
@@ -1425,6 +1476,9 @@ function modalTyKaydet() {
 
   const existingProduct = modalTyMod ? STATE.trendyol.find(x => x.id === modalTyMod) : null;
   const currentPrice = parseFloat(document.getElementById("modal-ty-currentprice").value) || 0;
+  
+  const customShippingVal = parseFloat(document.getElementById("modal-ty-custom-shipping").value);
+  const customShipping = (!isNaN(customShippingVal) && customShippingVal > 0) ? customShippingVal : null;
 
   if (!ad) { hata("modal-ty-error","Ürün adı zorunludur."); return; }
 
@@ -1441,12 +1495,13 @@ function modalTyKaydet() {
     }
   }
 
-  const r = trendyolHesap(mal, amb, sab, finalOzelKomis, finalKomisyonBitis, bireyselMarj, vatSell, bugun, currentPrice, isTraffic);
+  const r = trendyolHesap(mal, amb, sab, finalOzelKomis, finalKomisyonBitis, bireyselMarj, vatSell, bugun, currentPrice, isTraffic, customShipping);
   if (r.hata && !r.missingCogs) { hata("modal-ty-error",r.hata); return; }
 
   const yeni = { 
     ad, sku, asin, 
     isTrafficStrategy: isTraffic,
+    customShipping,
     maliyet:mal, ambalaj:amb, sabit:sab, 
     bireyselMarj, 
     ozelKomis: finalOzelKomis, 
@@ -1679,7 +1734,8 @@ function trendyolYenidenHesapla() {
       p.vatSell !== undefined ? p.vatSell : 20, 
       p.bugunKargoda||false,
       p.currentPrice||0,
-      p.isTrafficStrategy||false
+      p.isTrafficStrategy||false,
+      p.customShipping || null
     );
     // missingCogs results still get spread so the render can see the flag
     if (r.hata && !r.missingCogs) return p;
@@ -2242,12 +2298,14 @@ function exportAmazonExcel() {
     "ASIN": p.asin || "",
     "Kategori": p.category === 'saglik' ? 'Sağlık' : (p.category === 'diger' ? 'Diğer' : 'Kozmetik'),
     "Eksik Maliyet": p.missingCogs ? "Evet" : "Hayır",
+    "FBA (E/H)": p.isFBA ? "E" : "H",
+    "FBA Kargo (₺)": p.isFBA && p.fbaKargo ? parseFloat(p.fbaKargo) : "",
     "Mevcut Fiyat (₺)": parseFloat(p.currentPrice || 0),
     "BuyBox Fiyatı (₺)": parseFloat(p.buyboxPrice || 0),
     "Ürün Maliyeti (₺)": parseFloat(p.maliyet || 0),
     "Ambalaj Maliyeti (₺)": parseFloat(p.ambalaj || 0),
     "Sabit Maliyet/Birim (₺)": parseFloat(p.sabit || 0),
-    "Amazon Kargo Maliyeti (₺)": parseFloat(p.kargo || GP.kargo),
+    "Amazon Kargo Maliyeti (₺)": p.isFBA && p.fbaKargo ? parseFloat(p.fbaKargo) : parseFloat(p.kargo || GP.kargo),
     "Komisyon Oranı (%)": parseFloat(p.komisyonO || 0),
     "Komisyon Tutarı (₺)": parseFloat(p.komisyonT || 0),
     "Önerilen Satış Fiyatı (₺)": parseFloat(p.satisF || 0),
@@ -2274,6 +2332,7 @@ function exportTrendyolExcel() {
     "SKU": p.sku || "",
     "Trafik Ürünü (Grup B)": p.trafik ? "Evet" : "Hayır",
     "Bugün Kargoda": p.today ? "Evet" : "Hayır",
+    "Özel Kargo (₺)": p.customShipping ? parseFloat(p.customShipping) : "",
     "Mevcut Fiyat (₺)": parseFloat(p.currentPrice || 0),
     "Mevcut Marj (%)": parseFloat(p.currMargin || 0),
     "Önerilen Satış Fiyatı (₺)": parseFloat(p.satisF || 0),
@@ -2349,15 +2408,20 @@ function processSystemAmazonBulk(rows) {
     let rawCat = String(row["Kategori"] || "kozmetik").toLowerCase().trim();
     let kat = rawCat.includes("sağlık") || rawCat.includes("saglik") ? "saglik" : (rawCat.includes("diğer") || rawCat.includes("diger") ? "diger" : "kozmetik");
 
+    const isFBA = String(row["FBA (E/H)"] || "").trim().toUpperCase() === "E";
+    const fbaKargo = parseExcelNum(row["FBA Kargo (₺)"]);
+
     const parsedCurrentP = parseExcelNum(row["Mevcut Fiyat (₺)"]);
     let currentP = parsedCurrentP !== null ? parsedCurrentP : (targetIdx !== -1 ? (STATE.amazon[targetIdx].currentPrice || 0) : 0);
     let buyboxP = targetIdx !== -1 ? (STATE.amazon[targetIdx].buyboxPrice || null) : null;
     let usedMarj = parsedMarj !== null ? parsedMarj : GP.marj;
 
-    const r = amazonHesap(parsedMaliyet, parsedAmbalaj, parsedSabit, GP.kargo, usedMarj, kat, buyboxP, currentP);
+    const finalKargo = (isFBA && fbaKargo !== null && fbaKargo > 0) ? fbaKargo : GP.kargo;
+    const r = amazonHesap(parsedMaliyet, parsedAmbalaj, parsedSabit, finalKargo, usedMarj, kat, buyboxP, currentP);
     
     const newObj = {
       ad, sku, asin, category: kat,
+      isFBA, fbaKargo: (isFBA && fbaKargo !== null && fbaKargo > 0) ? fbaKargo : null,
       maliyet: parsedMaliyet, ambalaj: parsedAmbalaj, sabit: parsedSabit, bireyselMarj: parsedMarj,
       currentPrice: currentP, buyboxPrice: buyboxP,
       ...r
@@ -2400,6 +2464,7 @@ function processSystemTrendyolBulk(rows) {
     const isTraffic = parseExcelBool(row["Trafik Ürünü (Grup B)"]);
     const isToday = parseExcelBool(row["Bugün Kargoda"]);
     const commDate = row["Komisyon Bitiş"] === "Yok" ? "" : (row["Komisyon Bitiş"] || "");
+    const parsedCustomShipping = parseExcelNum(row["Özel Kargo (₺)"]);
 
     const parsedCurrentP = parseExcelNum(row["Mevcut Fiyat (₺)"]);
     let currentP = parsedCurrentP !== null ? parsedCurrentP : (targetIdx !== -1 ? (STATE.trendyol[targetIdx].currentPrice || 0) : 0);
@@ -2416,11 +2481,13 @@ function processSystemTrendyolBulk(rows) {
       parsedKdv,            // vatSell
       isToday,              // bugunKargoda
       currentP,             // currentPrice
-      isTraffic             // isTrafficStrategy
+      isTraffic,            // isTrafficStrategy
+      parsedCustomShipping  // customShipping
     );
 
     const newObj = {
       ad, sku, asin, trafik: isTraffic, today: isToday,
+      customShipping: parsedCustomShipping,
       maliyet: parsedMaliyet, ambalaj: parsedAmbalaj, sabit: parsedSabit, 
       kdv: parsedKdv, customComm: parsedCustomComm, commDate: commDate,
       bireyselMarj: parsedMarj, currentPrice: currentP, buyboxPrice: buyboxP,

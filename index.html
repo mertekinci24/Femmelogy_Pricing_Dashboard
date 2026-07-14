@@ -710,6 +710,20 @@
         </div>
       </div>
 
+      <!-- FBA Kargo Override (Schema v2) -->
+      <div class="modal-row" style="align-items: center; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="modal-fba-toggle" style="width:16px;height:16px; accent-color: var(--accent-amazon);" onchange="document.getElementById('fba-kargo-wrapper').style.display = this.checked ? 'block' : 'none'; if(typeof modalLiveCalc === 'function') modalLiveCalc();">
+          <label for="modal-fba-toggle" style="cursor:pointer; font-weight: 600;">FBA ile Gönderim</label>
+        </div>
+      </div>
+      <div class="modal-row" id="fba-kargo-wrapper" style="display: none; margin-bottom: 12px;">
+        <div class="modal-field">
+          <label for="modal-fba-kargo">FBA Kargo Ücreti (₺)</label>
+          <div class="iw"><span class="ip">₺</span><input type="number" id="modal-fba-kargo" placeholder="0,00" min="0" step="0.01" /></div>
+        </div>
+      </div>
+
       <!-- Canlı Önizleme -->
       <div id="amazon-ledger-preview" style="background: var(--bg-darker); padding: 12px; border-radius: 8px;">
         <div style="display:flex; justify-content:space-between; font-weight:700; font-size:16px; margin-bottom:12px;">
@@ -789,6 +803,7 @@
       </div>
       <div class="modal-row">
         <div class="modal-field"><label>Satış KDV (%)</label><div class="iw"><span class="ip">%</span><input type="number" id="modal-ty-vatsell" step="1" value="20"/></div></div>
+        <div class="modal-field"><label>Özel Kargo Ücreti (₺) <span class="field-hint">boş = sistem</span></label><div class="iw"><span class="ip">₺</span><input type="number" id="modal-ty-custom-shipping" step="0.01"/></div></div>
       </div>
       <!-- Bug 2 Fix: Mevcut Fiyat (TY) -->
       <div class="modal-row">
