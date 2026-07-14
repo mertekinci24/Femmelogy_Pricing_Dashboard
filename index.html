@@ -259,14 +259,146 @@
           <thead>
             <tr>
               <th style="width:36px">#</th>
-              <th>Ürün Adı</th>
-              <th style="text-align: center; width: 50px;">BB</th>
-              <th>Toplam Maliyet</th>
-              <th class="col-price">Mevcut Fiyat (₺)</th>
-              <th>Mevcut Marj (%)</th>
-              <th class="col-price">Önerilen Fiyat (₺)</th>
-              <th>Hedef Marj (%)</th>
-              <th>Durum (Ölü Bölge vb)</th>
+              
+              <!-- Ürün Adı Filtresi -->
+              <th>
+                <div class="th-content">Ürün Adı <span class="filter-icon" onclick="toggleFilter(event, 'amz-ad-filter')" id="amz-ad-icon">🔽</span></div>
+                <div id="amz-ad-filter" class="filter-popover hidden" onclick="event.stopPropagation()">
+                  <input type="text" placeholder="Ad, SKU veya ASIN" id="amz-ad-input">
+                  <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearFilter('amazon', 'ad')">Temizle</button>
+                    <button class="btn-apply" onclick="applyFilter('amazon', 'ad')">Uygula</button>
+                  </div>
+                </div>
+              </th>
+
+              <!-- BB Filtresi -->
+              <th style="text-align: center; width: 50px;">
+                <div class="th-content" style="justify-content: center;">BB <span class="filter-icon" onclick="toggleFilter(event, 'amz-bb-filter')" id="amz-bb-icon">🔽</span></div>
+                <div id="amz-bb-filter" class="filter-popover hidden" onclick="event.stopPropagation()">
+                  <div class="filter-checkbox-list">
+                    <label class="filter-checkbox-item"><input type="checkbox" value="won" class="amz-bb-chk"> ✅ Bizde</label>
+                    <label class="filter-checkbox-item"><input type="checkbox" value="lost" class="amz-bb-chk"> ❌ Rakipte</label>
+                    <label class="filter-checkbox-item"><input type="checkbox" value="none" class="amz-bb-chk"> — Yok</label>
+                  </div>
+                  <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearFilter('amazon', 'bb')">Temizle</button>
+                    <button class="btn-apply" onclick="applyFilter('amazon', 'bb')">Uygula</button>
+                  </div>
+                </div>
+              </th>
+
+              <!-- Toplam Maliyet Filtresi -->
+              <th>
+                <div class="th-content">Toplam Maliyet <span class="filter-icon" onclick="toggleFilter(event, 'amz-maliyet-filter')" id="amz-maliyet-icon">🔽</span></div>
+                <div id="amz-maliyet-filter" class="filter-popover hidden" onclick="event.stopPropagation()">
+                  <select id="amz-maliyet-op" onchange="toggleMinMax('amz-maliyet')">
+                    <option value="gt">Büyüktür (>)</option>
+                    <option value="lt">Küçüktür (<)</option>
+                    <option value="eq">Eşittir (=)</option>
+                    <option value="between">Gelişmiş (Min-Max)</option>
+                  </select>
+                  <input type="number" id="amz-maliyet-val1" placeholder="Değer">
+                  <input type="number" id="amz-maliyet-val2" placeholder="Max Değer" style="display:none;">
+                  <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearFilter('amazon', 'maliyet')">Temizle</button>
+                    <button class="btn-apply" onclick="applyFilter('amazon', 'maliyet')">Uygula</button>
+                  </div>
+                </div>
+              </th>
+
+              <!-- Mevcut Fiyat Filtresi -->
+              <th class="col-price">
+                <div class="th-content">Mevcut Fiyat (₺) <span class="filter-icon" onclick="toggleFilter(event, 'amz-mevcut-filter')" id="amz-mevcut-icon">🔽</span></div>
+                <div id="amz-mevcut-filter" class="filter-popover hidden" onclick="event.stopPropagation()">
+                  <select id="amz-mevcut-op" onchange="toggleMinMax('amz-mevcut')">
+                    <option value="gt">Büyüktür (>)</option>
+                    <option value="lt">Küçüktür (<)</option>
+                    <option value="eq">Eşittir (=)</option>
+                    <option value="between">Gelişmiş (Min-Max)</option>
+                  </select>
+                  <input type="number" id="amz-mevcut-val1" placeholder="Değer">
+                  <input type="number" id="amz-mevcut-val2" placeholder="Max Değer" style="display:none;">
+                  <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearFilter('amazon', 'mevcut')">Temizle</button>
+                    <button class="btn-apply" onclick="applyFilter('amazon', 'mevcut')">Uygula</button>
+                  </div>
+                </div>
+              </th>
+
+              <!-- Mevcut Marj Filtresi -->
+              <th>
+                <div class="th-content">Mevcut Marj (%) <span class="filter-icon" onclick="toggleFilter(event, 'amz-mevcutmarj-filter')" id="amz-mevcutmarj-icon">🔽</span></div>
+                <div id="amz-mevcutmarj-filter" class="filter-popover hidden" onclick="event.stopPropagation()">
+                  <select id="amz-mevcutmarj-op" onchange="toggleMinMax('amz-mevcutmarj')">
+                    <option value="gt">Büyüktür (>)</option>
+                    <option value="lt">Küçüktür (<)</option>
+                    <option value="eq">Eşittir (=)</option>
+                    <option value="between">Gelişmiş (Min-Max)</option>
+                  </select>
+                  <input type="number" id="amz-mevcutmarj-val1" placeholder="Değer">
+                  <input type="number" id="amz-mevcutmarj-val2" placeholder="Max Değer" style="display:none;">
+                  <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearFilter('amazon', 'mevcutmarj')">Temizle</button>
+                    <button class="btn-apply" onclick="applyFilter('amazon', 'mevcutmarj')">Uygula</button>
+                  </div>
+                </div>
+              </th>
+
+              <!-- Önerilen Fiyat Filtresi -->
+              <th class="col-price">
+                <div class="th-content">Önerilen Fiyat (₺) <span class="filter-icon" onclick="toggleFilter(event, 'amz-onerilen-filter')" id="amz-onerilen-icon">🔽</span></div>
+                <div id="amz-onerilen-filter" class="filter-popover hidden" onclick="event.stopPropagation()">
+                  <select id="amz-onerilen-op" onchange="toggleMinMax('amz-onerilen')">
+                    <option value="gt">Büyüktür (>)</option>
+                    <option value="lt">Küçüktür (<)</option>
+                    <option value="eq">Eşittir (=)</option>
+                    <option value="between">Gelişmiş (Min-Max)</option>
+                  </select>
+                  <input type="number" id="amz-onerilen-val1" placeholder="Değer">
+                  <input type="number" id="amz-onerilen-val2" placeholder="Max Değer" style="display:none;">
+                  <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearFilter('amazon', 'onerilen')">Temizle</button>
+                    <button class="btn-apply" onclick="applyFilter('amazon', 'onerilen')">Uygula</button>
+                  </div>
+                </div>
+              </th>
+
+              <!-- Hedef Marj Filtresi -->
+              <th>
+                <div class="th-content">Hedef Marj (%) <span class="filter-icon" onclick="toggleFilter(event, 'amz-hedefmarj-filter')" id="amz-hedefmarj-icon">🔽</span></div>
+                <div id="amz-hedefmarj-filter" class="filter-popover hidden" onclick="event.stopPropagation()">
+                  <select id="amz-hedefmarj-op" onchange="toggleMinMax('amz-hedefmarj')">
+                    <option value="gt">Büyüktür (>)</option>
+                    <option value="lt">Küçüktür (<)</option>
+                    <option value="eq">Eşittir (=)</option>
+                    <option value="between">Gelişmiş (Min-Max)</option>
+                  </select>
+                  <input type="number" id="amz-hedefmarj-val1" placeholder="Değer">
+                  <input type="number" id="amz-hedefmarj-val2" placeholder="Max Değer" style="display:none;">
+                  <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearFilter('amazon', 'hedefmarj')">Temizle</button>
+                    <button class="btn-apply" onclick="applyFilter('amazon', 'hedefmarj')">Uygula</button>
+                  </div>
+                </div>
+              </th>
+
+              <!-- Durum Filtresi -->
+              <th>
+                <div class="th-content">Durum <span class="filter-icon" onclick="toggleFilter(event, 'amz-durum-filter')" id="amz-durum-icon">🔽</span></div>
+                <div id="amz-durum-filter" class="filter-popover hidden" onclick="event.stopPropagation()">
+                  <div class="filter-checkbox-list">
+                    <label class="filter-checkbox-item"><input type="checkbox" value="olu" class="amz-durum-chk"> ⚠️ Ölü Bölge</label>
+                    <label class="filter-checkbox-item"><input type="checkbox" value="108" class="amz-durum-chk"> %10,8 Komisyon</label>
+                    <label class="filter-checkbox-item"><input type="checkbox" value="168" class="amz-durum-chk"> %16,8 Komisyon</label>
+                  </div>
+                  <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearFilter('amazon', 'durum')">Temizle</button>
+                    <button class="btn-apply" onclick="applyFilter('amazon', 'durum')">Uygula</button>
+                  </div>
+                </div>
+              </th>
+
               <th style="width:80px">İşlem</th>
             </tr>
           </thead>
@@ -341,14 +473,142 @@
           <thead>
             <tr>
               <th style="width:36px">#</th>
-              <th>Ürün Adı</th>
-              <th style="text-align: center; width: 80px;">GRUP</th>
-              <th style="text-align: center; width: 50px;">BB</th>
-              <th>Toplam Maliyet</th>
-              <th class="col-price">Mevcut Fiyat (₺)</th>
-              <th>Mevcut Marj (%)</th>
-              <th class="col-price">Önerilen Fiyat (₺)</th>
-              <th>Hedef Marj (%)</th>
+              
+              <!-- Ürün Adı Filtresi -->
+              <th>
+                <div class="th-content">Ürün Adı <span class="filter-icon" onclick="toggleFilter(event, 'ty-ad-filter')" id="ty-ad-icon">🔽</span></div>
+                <div id="ty-ad-filter" class="filter-popover hidden" onclick="event.stopPropagation()">
+                  <input type="text" placeholder="Ad, SKU veya Barkod" id="ty-ad-input">
+                  <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearFilter('trendyol', 'ad')">Temizle</button>
+                    <button class="btn-apply" onclick="applyFilter('trendyol', 'ad')">Uygula</button>
+                  </div>
+                </div>
+              </th>
+
+              <!-- GRUP Filtresi -->
+              <th style="text-align: center; width: 80px;">
+                <div class="th-content" style="justify-content: center;">GRUP <span class="filter-icon" onclick="toggleFilter(event, 'ty-grup-filter')" id="ty-grup-icon">🔽</span></div>
+                <div id="ty-grup-filter" class="filter-popover hidden" onclick="event.stopPropagation()">
+                  <input type="text" placeholder="Grup (Örn: A)" id="ty-grup-input">
+                  <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearFilter('trendyol', 'grup')">Temizle</button>
+                    <button class="btn-apply" onclick="applyFilter('trendyol', 'grup')">Uygula</button>
+                  </div>
+                </div>
+              </th>
+
+              <!-- BB Filtresi -->
+              <th style="text-align: center; width: 50px;">
+                <div class="th-content" style="justify-content: center;">BB <span class="filter-icon" onclick="toggleFilter(event, 'ty-bb-filter')" id="ty-bb-icon">🔽</span></div>
+                <div id="ty-bb-filter" class="filter-popover hidden" onclick="event.stopPropagation()">
+                  <div class="filter-checkbox-list">
+                    <label class="filter-checkbox-item"><input type="checkbox" value="won" class="ty-bb-chk"> ✅ Bizde</label>
+                    <label class="filter-checkbox-item"><input type="checkbox" value="lost" class="ty-bb-chk"> ❌ Rakipte</label>
+                    <label class="filter-checkbox-item"><input type="checkbox" value="none" class="ty-bb-chk"> — Yok</label>
+                  </div>
+                  <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearFilter('trendyol', 'bb')">Temizle</button>
+                    <button class="btn-apply" onclick="applyFilter('trendyol', 'bb')">Uygula</button>
+                  </div>
+                </div>
+              </th>
+
+              <!-- Toplam Maliyet Filtresi -->
+              <th>
+                <div class="th-content">Toplam Maliyet <span class="filter-icon" onclick="toggleFilter(event, 'ty-maliyet-filter')" id="ty-maliyet-icon">🔽</span></div>
+                <div id="ty-maliyet-filter" class="filter-popover hidden" onclick="event.stopPropagation()">
+                  <select id="ty-maliyet-op" onchange="toggleMinMax('ty-maliyet')">
+                    <option value="gt">Büyüktür (>)</option>
+                    <option value="lt">Küçüktür (<)</option>
+                    <option value="eq">Eşittir (=)</option>
+                    <option value="between">Gelişmiş (Min-Max)</option>
+                  </select>
+                  <input type="number" id="ty-maliyet-val1" placeholder="Değer">
+                  <input type="number" id="ty-maliyet-val2" placeholder="Max Değer" style="display:none;">
+                  <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearFilter('trendyol', 'maliyet')">Temizle</button>
+                    <button class="btn-apply" onclick="applyFilter('trendyol', 'maliyet')">Uygula</button>
+                  </div>
+                </div>
+              </th>
+
+              <!-- Mevcut Fiyat Filtresi -->
+              <th class="col-price">
+                <div class="th-content">Mevcut Fiyat (₺) <span class="filter-icon" onclick="toggleFilter(event, 'ty-mevcut-filter')" id="ty-mevcut-icon">🔽</span></div>
+                <div id="ty-mevcut-filter" class="filter-popover hidden" onclick="event.stopPropagation()">
+                  <select id="ty-mevcut-op" onchange="toggleMinMax('ty-mevcut')">
+                    <option value="gt">Büyüktür (>)</option>
+                    <option value="lt">Küçüktür (<)</option>
+                    <option value="eq">Eşittir (=)</option>
+                    <option value="between">Gelişmiş (Min-Max)</option>
+                  </select>
+                  <input type="number" id="ty-mevcut-val1" placeholder="Değer">
+                  <input type="number" id="ty-mevcut-val2" placeholder="Max Değer" style="display:none;">
+                  <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearFilter('trendyol', 'mevcut')">Temizle</button>
+                    <button class="btn-apply" onclick="applyFilter('trendyol', 'mevcut')">Uygula</button>
+                  </div>
+                </div>
+              </th>
+
+              <!-- Mevcut Marj Filtresi -->
+              <th>
+                <div class="th-content">Mevcut Marj (%) <span class="filter-icon" onclick="toggleFilter(event, 'ty-mevcutmarj-filter')" id="ty-mevcutmarj-icon">🔽</span></div>
+                <div id="ty-mevcutmarj-filter" class="filter-popover hidden" onclick="event.stopPropagation()">
+                  <select id="ty-mevcutmarj-op" onchange="toggleMinMax('ty-mevcutmarj')">
+                    <option value="gt">Büyüktür (>)</option>
+                    <option value="lt">Küçüktür (<)</option>
+                    <option value="eq">Eşittir (=)</option>
+                    <option value="between">Gelişmiş (Min-Max)</option>
+                  </select>
+                  <input type="number" id="ty-mevcutmarj-val1" placeholder="Değer">
+                  <input type="number" id="ty-mevcutmarj-val2" placeholder="Max Değer" style="display:none;">
+                  <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearFilter('trendyol', 'mevcutmarj')">Temizle</button>
+                    <button class="btn-apply" onclick="applyFilter('trendyol', 'mevcutmarj')">Uygula</button>
+                  </div>
+                </div>
+              </th>
+
+              <!-- Önerilen Fiyat Filtresi -->
+              <th class="col-price">
+                <div class="th-content">Önerilen Fiyat (₺) <span class="filter-icon" onclick="toggleFilter(event, 'ty-onerilen-filter')" id="ty-onerilen-icon">🔽</span></div>
+                <div id="ty-onerilen-filter" class="filter-popover hidden" onclick="event.stopPropagation()">
+                  <select id="ty-onerilen-op" onchange="toggleMinMax('ty-onerilen')">
+                    <option value="gt">Büyüktür (>)</option>
+                    <option value="lt">Küçüktür (<)</option>
+                    <option value="eq">Eşittir (=)</option>
+                    <option value="between">Gelişmiş (Min-Max)</option>
+                  </select>
+                  <input type="number" id="ty-onerilen-val1" placeholder="Değer">
+                  <input type="number" id="ty-onerilen-val2" placeholder="Max Değer" style="display:none;">
+                  <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearFilter('trendyol', 'onerilen')">Temizle</button>
+                    <button class="btn-apply" onclick="applyFilter('trendyol', 'onerilen')">Uygula</button>
+                  </div>
+                </div>
+              </th>
+
+              <!-- Hedef Marj Filtresi -->
+              <th>
+                <div class="th-content">Hedef Marj (%) <span class="filter-icon" onclick="toggleFilter(event, 'ty-hedefmarj-filter')" id="ty-hedefmarj-icon">🔽</span></div>
+                <div id="ty-hedefmarj-filter" class="filter-popover hidden" onclick="event.stopPropagation()">
+                  <select id="ty-hedefmarj-op" onchange="toggleMinMax('ty-hedefmarj')">
+                    <option value="gt">Büyüktür (>)</option>
+                    <option value="lt">Küçüktür (<)</option>
+                    <option value="eq">Eşittir (=)</option>
+                    <option value="between">Gelişmiş (Min-Max)</option>
+                  </select>
+                  <input type="number" id="ty-hedefmarj-val1" placeholder="Değer">
+                  <input type="number" id="ty-hedefmarj-val2" placeholder="Max Değer" style="display:none;">
+                  <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearFilter('trendyol', 'hedefmarj')">Temizle</button>
+                    <button class="btn-apply" onclick="applyFilter('trendyol', 'hedefmarj')">Uygula</button>
+                  </div>
+                </div>
+              </th>
+
               <th style="width:80px">İşlem</th>
             </tr>
           </thead>

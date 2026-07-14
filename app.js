@@ -20,6 +20,111 @@ const GP = {
 };
 
 /* ══════════════════════════════════════════
+   FILTER STATE & UI LOGIC
+══════════════════════════════════════════ */
+const FILTERS = {
+  amazon: {
+    ad: "", bb: [], durum: [],
+    maliyet: { op: "gt", val1: null, val2: null },
+    mevcut: { op: "gt", val1: null, val2: null },
+    mevcutmarj: { op: "gt", val1: null, val2: null },
+    onerilen: { op: "gt", val1: null, val2: null },
+    hedefmarj: { op: "gt", val1: null, val2: null }
+  },
+  trendyol: {
+    ad: "", grup: "", bb: [],
+    maliyet: { op: "gt", val1: null, val2: null },
+    mevcut: { op: "gt", val1: null, val2: null },
+    mevcutmarj: { op: "gt", val1: null, val2: null },
+    onerilen: { op: "gt", val1: null, val2: null },
+    hedefmarj: { op: "gt", val1: null, val2: null }
+  }
+};
+
+window.toggleFilter = function(e, id) {
+  e.stopPropagation();
+  const popover = document.getElementById(id);
+  const isHidden = popover.classList.contains("hidden");
+  
+  // Close all other popovers
+  document.querySelectorAll('.filter-popover').forEach(p => p.classList.add('hidden'));
+  
+  if (isHidden) {
+    popover.classList.remove("hidden");
+  }
+};
+
+window.toggleMinMax = function(idPrefix) {
+  const op = document.getElementById(idPrefix + "-op").value;
+  const val2 = document.getElementById(idPrefix + "-val2");
+  if (op === "between") {
+    val2.style.display = "block";
+  } else {
+    val2.style.display = "none";
+    val2.value = "";
+  }
+};
+
+window.applyFilter = function(platform, col) {
+  const prefix = platform === "amazon" ? "amz" : "ty";
+  const state = FILTERS[platform];
+  const popover = document.getElementById(`${prefix}-${col}-filter`);
+  const icon = document.getElementById(`${prefix}-${col}-icon`);
+
+  if (col === "ad" || col === "grup") {
+    state[col] = document.getElementById(`${prefix}-${col}-input`).value.trim().toLowerCase();
+    icon.classList.toggle("filter-active", state[col] !== "");
+  } else if (col === "bb" || col === "durum") {
+    const chks = document.querySelectorAll(`.${prefix}-${col}-chk:checked`);
+    state[col] = Array.from(chks).map(c => c.value);
+    icon.classList.toggle("filter-active", state[col].length > 0);
+  } else {
+    state[col].op = document.getElementById(`${prefix}-${col}-op`).value;
+    const v1 = document.getElementById(`${prefix}-${col}-val1`).value;
+    const v2 = document.getElementById(`${prefix}-${col}-val2`).value;
+    state[col].val1 = v1 === "" ? null : parseFloat(v1);
+    state[col].val2 = v2 === "" ? null : parseFloat(v2);
+    icon.classList.toggle("filter-active", state[col].val1 !== null);
+  }
+
+  popover.classList.add("hidden");
+  if (platform === "amazon") amazonRender();
+  else trendyolRender();
+};
+
+window.clearFilter = function(platform, col) {
+  const prefix = platform === "amazon" ? "amz" : "ty";
+  const state = FILTERS[platform];
+  const icon = document.getElementById(`${prefix}-${col}-icon`);
+
+  if (col === "ad" || col === "grup") {
+    state[col] = "";
+    document.getElementById(`${prefix}-${col}-input`).value = "";
+  } else if (col === "bb" || col === "durum") {
+    state[col] = [];
+    document.querySelectorAll(`.${prefix}-${col}-chk`).forEach(c => c.checked = false);
+  } else {
+    state[col] = { op: "gt", val1: null, val2: null };
+    document.getElementById(`${prefix}-${col}-op`).value = "gt";
+    document.getElementById(`${prefix}-${col}-val1`).value = "";
+    document.getElementById(`${prefix}-${col}-val2`).value = "";
+    document.getElementById(`${prefix}-${col}-val2`).style.display = "none";
+  }
+
+  icon.classList.remove("filter-active");
+  document.getElementById(`${prefix}-${col}-filter`).classList.add("hidden");
+  
+  if (platform === "amazon") amazonRender();
+  else trendyolRender();
+};
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.filter-popover') && !e.target.closest('.filter-icon')) {
+    document.querySelectorAll('.filter-popover').forEach(p => p.classList.add('hidden'));
+  }
+});
+
+/* ══════════════════════════════════════════
    DURUM — localStorage (Birincil Katman)
    Firebase Firestore (İkincil Katman — Arka Plan Senkronizasyonu)
 ══════════════════════════════════════════ */
@@ -526,7 +631,63 @@ function amazonRender() {
   const tbody = document.getElementById("amazon-tbody");
   const empty = document.getElementById("amazon-empty");
   const badge = document.getElementById("badge-amazon");
-  const data  = STATE.amazon;
+  let data  = STATE.amazon;
+
+  // Filtre Katmanı
+  const f = FILTERS.amazon;
+  data = data.filter(p => {
+    if (f.ad) {
+      const searchStr = `${p.ad || ""} ${p.sku || ""} ${p.asin || ""}`.toLowerCase();
+      if (!searchStr.includes(f.ad)) return false;
+    }
+    
+    const checkNum = (filterObj, val) => {
+      if (filterObj.val1 === null) return true;
+      if (filterObj.op === "gt" && val <= filterObj.val1) return false;
+      if (filterObj.op === "lt" && val >= filterObj.val1) return false;
+      if (filterObj.op === "eq" && val !== filterObj.val1) return false;
+      if (filterObj.op === "between") {
+        if (val < filterObj.val1) return false;
+        if (filterObj.val2 !== null && val > filterObj.val2) return false;
+      }
+      return true;
+    };
+
+    const toplam = (p.maliyet||0)+(p.ambalaj||0)+(p.sabit||0);
+    if (!checkNum(f.maliyet, toplam)) return false;
+    
+    const currPrice = parseFloat(p.currentPrice || 0);
+    if (!checkNum(f.mevcut, currPrice)) return false;
+    
+    const calc = amazonHesap(p, currPrice);
+    const mevcutMarj = parseFloat(calc.marjYuzde || 0);
+    if (!checkNum(f.mevcutmarj, mevcutMarj)) return false;
+    
+    const onerilen = parseFloat(p.satis || 0);
+    if (!checkNum(f.onerilen, onerilen)) return false;
+    
+    const hMarj = parseFloat(p.hedefMarj || GP.marj);
+    if (!checkNum(f.hedefmarj, hMarj)) return false;
+
+    if (f.bb.length > 0) {
+      let status = "none";
+      if (p.buyboxPrice && p.buyboxPrice > 0) {
+         status = p.currentPrice <= (p.buyboxPrice + 0.01) ? "won" : "lost";
+      }
+      if (!f.bb.includes(status)) return false;
+    }
+
+    if (f.durum.length > 0) {
+      let d = "";
+      if (calc.oluBolge) d = "olu";
+      else if (p.komisyon === 10.8) d = "108";
+      else if (p.komisyon === 16.8) d = "168";
+      if (!f.durum.includes(d)) return false;
+    }
+
+    return true;
+  });
+
   if (badge) badge.textContent = data.length;
   if (!data.length) { tbody.innerHTML=""; empty.classList.remove("hidden"); return; }
   empty.classList.add("hidden");
@@ -1325,15 +1486,71 @@ function trendyolRender() {
   const tbody = document.getElementById("trendyol-tbody");
   const empty = document.getElementById("trendyol-empty");
   const badge = document.getElementById("badge-trendyol");
-  if(badge) badge.textContent = STATE.trendyol.length;
+  let data  = STATE.trendyol;
+
+  // Filtre Katmanı
+  const f = FILTERS.trendyol;
+  data = data.filter(p => {
+    if (f.ad) {
+      const searchStr = `${p.ad || ""} ${p.sku || ""} ${p.barkod || ""}`.toLowerCase();
+      if (!searchStr.includes(f.ad)) return false;
+    }
+    
+    if (f.grup && p.grup) {
+      if (!p.grup.toLowerCase().includes(f.grup)) return false;
+    }
+    else if (f.grup && !p.grup) {
+      return false; // Grup girilmiş ama üründe grup yoksa gösterme
+    }
+    
+    const checkNum = (filterObj, val) => {
+      if (filterObj.val1 === null) return true;
+      if (filterObj.op === "gt" && val <= filterObj.val1) return false;
+      if (filterObj.op === "lt" && val >= filterObj.val1) return false;
+      if (filterObj.op === "eq" && val !== filterObj.val1) return false;
+      if (filterObj.op === "between") {
+        if (val < filterObj.val1) return false;
+        if (filterObj.val2 !== null && val > filterObj.val2) return false;
+      }
+      return true;
+    };
+
+    const topMaliyet = (p.maliyet||0)+(p.ambalaj||0)+(p.sabit||0);
+    if (!checkNum(f.maliyet, topMaliyet)) return false;
+    
+    const currPrice = parseFloat(p.currentPrice || 0);
+    if (!checkNum(f.mevcut, currPrice)) return false;
+    
+    const calc = trendyolHesap(p, currPrice);
+    const mevcutMarj = parseFloat(calc.marjYuzde || 0);
+    if (!checkNum(f.mevcutmarj, mevcutMarj)) return false;
+    
+    const onerilen = parseFloat(p.satis || 0);
+    if (!checkNum(f.onerilen, onerilen)) return false;
+    
+    const hMarj = parseFloat(p.hedefMarj || GP.tyMarj);
+    if (!checkNum(f.hedefmarj, hMarj)) return false;
+
+    if (f.bb.length > 0) {
+      let status = "none";
+      if (p.buyboxPrice && p.buyboxPrice > 0) {
+         status = p.currentPrice <= (p.buyboxPrice + 0.01) ? "won" : "lost";
+      }
+      if (!f.bb.includes(status)) return false;
+    }
+
+    return true;
+  });
+
+  if(badge) badge.textContent = data.length;
   
-  if (!STATE.trendyol.length) { tbody.innerHTML=""; empty?.classList.remove("hidden"); return; }
+  if (!data.length) { tbody.innerHTML=""; empty?.classList.remove("hidden"); return; }
   empty?.classList.add("hidden");
 
   const sil = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
   const duz = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
 
-  tbody.innerHTML = STATE.trendyol.map((p,i) => {
+  tbody.innerHTML = data.map((p,i) => {
     const topMaliyet = (p.maliyet||0)+(p.ambalaj||0)+(p.sabit||0);
     const mP = [];
     if(p.sku) mP.push('SKU: '+htmlK(p.sku));
